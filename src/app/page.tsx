@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Chat from "@/components/Chat";
-import PdfViewer from "@/components/PDFViewer";
+import PdfViewer from "@/components/pdf-viewer/PdfViewer";
 
 export default function HomePage() {
   const [searchWord, setSearchWord] = useState("");
