@@ -7,7 +7,11 @@ export interface Message {
   content: string;
 }
 
-export default function Chat() {
+interface ChatProps {
+  onSearchWordChange: (word: string) => void;
+}
+
+export default function Chat({ onSearchWordChange }: ChatProps) {
   const [messages, setMessages] = useState<Message[]>([
     { role: "system", content: "You are a helpful assistant." },
   ]);
@@ -19,13 +23,16 @@ export default function Chat() {
 
     const newMessages = [
       ...messages,
-      { role: "user" as const, content: input },
+      { role: "user" as const, content: input }, // <-- add "as const"
     ];
+    setMessages(newMessages);
 
-    setMessages(newMessages);
-    setMessages(newMessages);
     setInput("");
     setLoading(true);
+
+    console.log("input", input);
+    // update the PDF search word immediately
+    onSearchWordChange(input);
 
     try {
       const res = await fetch("/api/chat", {
