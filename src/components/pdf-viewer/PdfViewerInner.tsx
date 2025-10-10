@@ -1,11 +1,9 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { Document, Page, pdfjs } from "react-pdf";
-import type {
-  PDFDocumentProxy,
-  TextItem,
-} from "pdfjs-dist/types/src/display/api";
+import { Document, pdfjs } from "react-pdf";
+import type { PDFDocumentProxy } from "pdfjs-dist/types/src/display/api";
+import PageWrapper from "./PageWrapper";
 
 pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
 
@@ -14,7 +12,7 @@ interface PdfViewerProps {
   searchWord?: string;
 }
 
-export default function PdfViewer({ url, searchWord }: PdfViewerProps) {
+export default function PdfViewerInner({ url, searchWord }: PdfViewerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const pdfRef = useRef<PDFDocumentProxy | null>(null);
   const [numPages, setNumPages] = useState(0);
@@ -22,7 +20,7 @@ export default function PdfViewer({ url, searchWord }: PdfViewerProps) {
   const [currentPage, setCurrentPage] = useState(1);
   const [scrollToPage, setScrollToPage] = useState<number | null>(null);
 
-  // Dynamically update page width
+  // Update page width on resize
   useEffect(() => {
     const updateWidth = () => {
       if (containerRef.current) {
@@ -39,18 +37,14 @@ export default function PdfViewer({ url, searchWord }: PdfViewerProps) {
     setNumPages(pdf.numPages);
   };
 
-  // Search PDF when searchWord changes
+  // Search for the word
   useEffect(() => {
     if (!searchWord || !pdfRef.current) return;
 
     const findWord = async () => {
-      if (!pdfRef.current) return;
-
-      console.log(`Starting search for "${searchWord}"...`);
       let firstMatch: number | null = null;
 
-      for (let i = 1; i <= pdfRef.current.numPages; i++) {
-        console.log(`Checking page ${i}...`);
+      for (let i = 1; i <= pdfRef.current!.numPages; i++) {
         const page = await pdfRef.current.getPage(i);
         const content = await page.getTextContent();
         const text = content.items
@@ -58,35 +52,18 @@ export default function PdfViewer({ url, searchWord }: PdfViewerProps) {
           .join(" ");
 
         if (text.toLowerCase().includes(searchWord.toLowerCase())) {
-          console.log(`Page ${i} contains "${searchWord}"`);
           if (firstMatch === null) firstMatch = i;
         }
       }
 
       if (firstMatch !== null) {
         setCurrentPage(firstMatch);
-        setScrollToPage(firstMatch); // will trigger PageWrapper to scroll after render
+        setScrollToPage(firstMatch); // trigger scroll
       }
-
-      console.log(`Search completed.`);
     };
 
     findWord();
   }, [searchWord, numPages]);
-
-  // Scroll to the page after it is rendered
-  useEffect(() => {
-    if (scrollToPage !== null && containerRef.current) {
-      const pageEl = containerRef.current.children[
-        scrollToPage - 1
-      ] as HTMLElement;
-      if (pageEl) {
-        pageEl.scrollIntoView({ behavior: "smooth" });
-        setScrollToPage(null); // reset
-        console.log(`Scrolled to page ${scrollToPage}`);
-      }
-    }
-  }, [scrollToPage]);
 
   return (
     <div className="flex flex-col w-full h-screen bg-black text-white">
@@ -104,7 +81,7 @@ export default function PdfViewer({ url, searchWord }: PdfViewerProps) {
               key={index}
               pageNumber={index + 1}
               pageWidth={pageWidth}
-              scrollTo={scrollToPage === index + 1} // scroll only first match
+              scrollTo={scrollToPage === index + 1}
             />
           ))}
         </Document>
@@ -129,43 +106,6 @@ export default function PdfViewer({ url, searchWord }: PdfViewerProps) {
           </button>
         </div>
       )}
-    </div>
-  );
-}
-
-interface PageWrapperProps {
-  pageNumber: number;
-  pageWidth: number;
-  scrollTo?: boolean; // scroll this page if true
-}
-
-function PageWrapper({ pageNumber, pageWidth, scrollTo }: PageWrapperProps) {
-  const [loaded, setLoaded] = useState(false);
-  const pageRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (loaded && scrollTo && pageRef.current) {
-      pageRef.current.scrollIntoView({ behavior: "smooth" });
-      console.log(`Scrolled to page ${pageNumber}`);
-    }
-  }, [loaded, scrollTo, pageNumber]);
-
-  return (
-    <div ref={pageRef} className="relative w-full flex justify-center bg-black">
-      {!loaded && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black text-white z-10">
-          Loading page {pageNumber}...
-        </div>
-      )}
-      <Page
-        pageNumber={pageNumber}
-        width={pageWidth}
-        renderMode="canvas"
-        renderTextLayer={false}
-        renderAnnotationLayer={false}
-        className="bg-black"
-        onRenderSuccess={() => setLoaded(true)}
-      />
     </div>
   );
 }
