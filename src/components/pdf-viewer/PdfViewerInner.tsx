@@ -42,9 +42,11 @@ export default function PdfViewerInner({ url, searchWord }: PdfViewerProps) {
     if (!searchWord || !pdfRef.current) return;
 
     const findWord = async () => {
+      if (!pdfRef.current) return;
+
       let firstMatch: number | null = null;
 
-      for (let i = 1; i <= pdfRef.current!.numPages; i++) {
+      for (let i = 1; i <= pdfRef.current.numPages; i++) {
         const page = await pdfRef.current.getPage(i);
         const content = await page.getTextContent();
         const text = content.items
