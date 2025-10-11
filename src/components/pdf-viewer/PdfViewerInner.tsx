@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { Document, pdfjs } from "react-pdf";
 import type { PDFDocumentProxy } from "pdfjs-dist/types/src/display/api";
 import PageWrapper from "./PageWrapper";
+import type { Highlight } from "@/types"; // adjust the path to your file
 
 pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
 

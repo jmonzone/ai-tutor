@@ -5,13 +5,7 @@ import { Page } from "react-pdf";
 import "react-pdf/dist/Page/TextLayer.css";
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import type { PageViewport } from "pdfjs-dist/types/src/display/display_utils";
-
-interface Highlight {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-}
+import type { Highlight } from "@/types"; // adjust the path to your file
 
 interface PageWrapperProps {
   pageNumber: number;
