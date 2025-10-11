@@ -19,6 +19,7 @@ export default function PdfViewerInner({ url, searchWord }: PdfViewerProps) {
   const [pageWidth, setPageWidth] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [scrollToPage, setScrollToPage] = useState<number | null>(null);
+  const [highlights, setHighlights] = useState<Record<number, Highlight[]>>({});
 
   // Update page width on resize
   useEffect(() => {
@@ -44,23 +45,54 @@ export default function PdfViewerInner({ url, searchWord }: PdfViewerProps) {
     const findWord = async () => {
       if (!pdfRef.current) return;
 
+      const newHighlights: Record<number, Highlight[]> = {};
       let firstMatch: number | null = null;
 
       for (let i = 1; i <= pdfRef.current.numPages; i++) {
         const page = await pdfRef.current.getPage(i);
         const content = await page.getTextContent();
-        const text = content.items
-          .map((item) => ("str" in item ? item.str : ""))
-          .join(" ");
+        // Replace multiple spaces/newlines yourself:
+        for (const item of content.items) {
+          if ("str" in item) {
+            item.str = item.str.replace(/\s+/g, " ");
+          }
+        }
 
-        if (text.toLowerCase().includes(searchWord.toLowerCase())) {
-          if (firstMatch === null) firstMatch = i;
+        const matches: Highlight[] = [];
+
+        const HORIZONTAL_PADDING = 10; // in pixels
+        const VERTICAL_PADDING = 2; // in pixels
+
+        for (const item of content.items) {
+          if (
+            "str" in item &&
+            item.str.toLowerCase().includes(searchWord.toLowerCase())
+          ) {
+            const transform = item.transform;
+            const totalWidth = item.width;
+            const height = item.height || 10;
+
+            const x = transform[4] - HORIZONTAL_PADDING;
+            const y = transform[5] - VERTICAL_PADDING;
+            const width = totalWidth + HORIZONTAL_PADDING * 2;
+            const adjustedHeight = height + VERTICAL_PADDING * 2;
+
+            matches.push({ x, y, width, height: adjustedHeight });
+
+            if (firstMatch === null) firstMatch = i;
+          }
+        }
+
+        if (matches.length > 0) {
+          newHighlights[i] = matches;
         }
       }
 
+      setHighlights(newHighlights);
+
       if (firstMatch !== null) {
         setCurrentPage(firstMatch);
-        setScrollToPage(firstMatch); // trigger scroll
+        setScrollToPage(firstMatch);
       }
     };
 
@@ -84,6 +116,7 @@ export default function PdfViewerInner({ url, searchWord }: PdfViewerProps) {
               pageNumber={index + 1}
               pageWidth={pageWidth}
               scrollTo={scrollToPage === index + 1}
+              highlights={highlights[index + 1] || []}
             />
           ))}
         </Document>

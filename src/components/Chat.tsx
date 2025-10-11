@@ -33,6 +33,7 @@ export default function Chat({ onSearchWordChange }: ChatProps) {
     console.log("input", input);
     // update the PDF search word immediately
     onSearchWordChange(input);
+    return;
 
     try {
       const res = await fetch("/api/chat", {

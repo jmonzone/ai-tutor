@@ -16,7 +16,7 @@ export default function HomePage() {
 
       {/* Right pane: PDF Viewer */}
       <div className="w-1/2 overflow-auto">
-        <PdfViewer url="/kingdom-hearts.pdf" searchWord={searchWord} />
+        <PdfViewer url="/sample.pdf" searchWord={searchWord} />
       </div>
     </div>
   );

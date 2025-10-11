@@ -24,3 +24,9 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* custom highlight blend fix */
+.bg-yellow-400\/40 {
+  mix-blend-mode: multiply;
+  border-radius: 2px;
+}
