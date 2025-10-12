@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import Chat from "@/components/Chat";
+import Chat from "@/components/chat/Chat";
 import PdfViewer from "@/components/pdf-viewer/PdfViewer";
 
 export default function HomePage() {

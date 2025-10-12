@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import VoiceRecorder from "./VoiceRecorder";
+import VoiceRecorder from "../VoiceRecorder";
+import ChatMessage from "./ChatMessage";
 
 export interface Message {
   role: "system" | "user" | "assistant";
@@ -38,10 +39,10 @@ export default function Chat({ onSearchWordChange }: ChatProps) {
     setInput("");
     setLoading(true);
 
-    console.log("input", input);
+    // console.log("input", input);
     // update the PDF search word immediately
-    onSearchWordChange(input);
-    return;
+    // onSearchWordChange(input);
+    // return;
 
     try {
       const res = await fetch("/api/chat", {
@@ -50,7 +51,19 @@ export default function Chat({ onSearchWordChange }: ChatProps) {
         body: JSON.stringify({ messages: newMessages }),
       });
       const data = await res.json();
-      if (data.reply) setMessages([...newMessages, data.reply]);
+
+      if (data.reply) {
+        setMessages((prev) => [
+          ...prev,
+          {
+            ...data.reply,
+            voiceUrl: `data:audio/mpeg;base64,${data.reply.voiceBase64}`,
+          },
+        ]);
+
+        // Auto-play voice
+        // new Audio(`data:audio/mpeg;base64,${data.reply.voiceBase64}`).play();
+      }
     } catch (err) {
       console.error("Chat API error:", err);
     } finally {
@@ -65,19 +78,12 @@ export default function Chat({ onSearchWordChange }: ChatProps) {
       {/* Message list */}
       <div
         ref={messagesContainerRef}
-        className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-2 mb-20" // reserve space for input bar
+        className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-2 mb-20"
       >
         {messages
           .filter((m) => m.role !== "system")
           .map((m, i) => (
-            <div
-              key={i}
-              className={m.role === "user" ? "text-right" : "text-left"}
-            >
-              <span className="inline-block max-w-[85%] sm:max-w-[75%] bg-gray-100 dark:bg-gray-800 rounded-xl px-4 py-2 break-words">
-                {m.content}
-              </span>
-            </div>
+            <ChatMessage key={i} message={m} />
           ))}
         <div ref={messagesEndRef} />
       </div>
