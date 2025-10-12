@@ -51,8 +51,8 @@ export default function Chat({ onSearchWordChange }: ChatProps) {
   }
 
   return (
-    <div className="p-6 max-w-lg mx-auto space-y-4">
-      <div className="space-y-2">
+    <div className="flex flex-col h-screen max-w-2xl mx-auto">
+      <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-2">
         {messages
           .filter((m) => m.role !== "system")
           .map((m, i) => (
@@ -60,16 +60,16 @@ export default function Chat({ onSearchWordChange }: ChatProps) {
               key={i}
               className={m.role === "user" ? "text-right" : "text-left"}
             >
-              <span className="block bg-gray-100 dark:bg-gray-800 rounded-xl px-4 py-2 inline-block">
+              <span className="inline-block max-w-[85%] sm:max-w-[75%] bg-gray-100 dark:bg-gray-800 rounded-xl px-4 py-2 break-words">
                 {m.content}
               </span>
             </div>
           ))}
       </div>
 
-      <div className="flex gap-2">
+      <div className="sticky bottom-0 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 p-3 sm:p-4 flex gap-2">
         <input
-          className="flex-1 border rounded-xl px-3 py-2"
+          className="flex-1 border rounded-xl px-3 py-2 text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-blue-500"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && sendMessage()}
@@ -78,7 +78,7 @@ export default function Chat({ onSearchWordChange }: ChatProps) {
         <button
           onClick={sendMessage}
           disabled={loading}
-          className="bg-blue-600 text-white px-4 py-2 rounded-xl"
+          className="bg-blue-600 text-white px-4 sm:px-6 py-2 rounded-xl text-sm sm:text-base hover:bg-blue-700 disabled:opacity-50"
         >
           {loading ? "..." : "Send"}
         </button>
