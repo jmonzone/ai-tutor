@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import VoiceRecorder from "./VoiceRecorder";
 
 export interface Message {
   role: "system" | "user" | "assistant";
@@ -82,6 +83,24 @@ export default function Chat({ onSearchWordChange }: ChatProps) {
         >
           {loading ? "..." : "Send"}
         </button>
+        <VoiceRecorder
+          onRecordComplete={(audioBlob) => {
+            // Example: Play the recorded message
+            const audioUrl = URL.createObjectURL(audioBlob);
+            new Audio(audioUrl).play();
+
+            // Add a message to the chat UI
+            setMessages((prev) => [
+              ...prev,
+              { role: "user", content: "🎤 Voice memo sent." },
+            ]);
+
+            // Optionally: send to backend
+            // const formData = new FormData();
+            // formData.append("audio", audioBlob);
+            // await fetch("/api/transcribe", { method: "POST", body: formData });
+          }}
+        />
       </div>
     </div>
   );

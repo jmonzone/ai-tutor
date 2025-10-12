@@ -8,13 +8,15 @@ export default function HomePage() {
   const [searchWord, setSearchWord] = useState("");
 
   return (
-    <div className="flex flex-col md:flex-row h-screen">
-      <div className="w-full md:w-1/2 h-1/2 md:h-auto overflow-auto border-b md:border-b-0 md:border-r border-gray-300">
-        <PdfViewer url="/sample.pdf" searchWord={searchWord} />
+    <div className="flex flex-col-reverse md:flex-row h-screen">
+      {/* Chat */}
+      <div className="w-full md:w-1/2 h-1/2 md:h-full overflow-auto md:border-r border-t md:border-t-0 border-gray-300">
+        <Chat onSearchWordChange={setSearchWord} />
       </div>
 
-      <div className="w-full md:w-1/2 h-1/2 md:h-auto overflow-auto">
-        <Chat onSearchWordChange={setSearchWord} />
+      {/* PDF Viewer */}
+      <div className="w-full md:w-1/2 h-1/2 md:h-full overflow-auto">
+        <PdfViewer url="/sample.pdf" searchWord={searchWord} />
       </div>
     </div>
   );
