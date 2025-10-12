@@ -1,12 +1,13 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import VoiceRecorder from "../VoiceRecorder";
 import ChatMessage from "./ChatMessage";
+import ChatInput from "./ChatInput";
 
 export interface Message {
   role: "system" | "user" | "assistant";
   content: string;
+  voiceUrl?: string;
 }
 
 interface ChatProps {
@@ -41,7 +42,7 @@ export default function Chat({ onSearchWordChange }: ChatProps) {
 
     // console.log("input", input);
     // update the PDF search word immediately
-    // onSearchWordChange(input);
+    onSearchWordChange(input);
     // return;
 
     try {
@@ -71,10 +72,58 @@ export default function Chat({ onSearchWordChange }: ChatProps) {
     }
   }
 
+  const handleVoiceRecord = async (audioBlob: Blob, transcript: string) => {
+    const audioUrl = URL.createObjectURL(audioBlob);
+    const trimmedTranscript = transcript?.trim();
+
+    console.log("handleVoiceRecord", trimmedTranscript);
+
+    // Play audio
+    new Audio(audioUrl).play();
+
+    // Prepare new message
+    const newMessage: Message = {
+      role: "user",
+      content: trimmedTranscript || "🎤 Voice memo sent.",
+      voiceUrl: audioUrl,
+    };
+
+    // Update state first
+    setMessages((prev) => [...prev, newMessage]);
+
+    // Send to OpenAI if transcript exists
+    if (trimmedTranscript) {
+      // get the latest messages including the new one
+      const currentMessages = [...messages, newMessage]; // OR use functional update if messages might be stale
+      postMessages(currentMessages);
+    }
+  };
+
+  const postMessages = async (messages: Message[]) => {
+    console.log("posting messages to openAI");
+    try {
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ messages }),
+      });
+      const data = await res.json();
+      if (data.reply) {
+        setMessages((prev: Message[]) => [...prev, data.reply]);
+      }
+    } catch (err) {
+      console.error("Chat API error:", err);
+    }
+  };
+
+  const handleDictate = (text: string) => {
+    console.log("handleDictate", text);
+
+    setInput(text);
+  };
+
   return (
     <div className="flex flex-col h-full relative">
-      {" "}
-      {/* relative parent */}
       {/* Message list */}
       <div
         ref={messagesContainerRef}
@@ -87,41 +136,14 @@ export default function Chat({ onSearchWordChange }: ChatProps) {
           ))}
         <div ref={messagesEndRef} />
       </div>
-      {/* Input bar */}
-      <div className="absolute bottom-0 left-0 right-0 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 p-3 sm:p-4 flex gap-2">
-        <input
-          className="flex-1 border rounded-xl px-3 py-2 text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-blue-500"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && sendMessage()}
-          placeholder="Type a message..."
-        />
-        <button
-          onClick={sendMessage}
-          disabled={loading}
-          className="bg-blue-600 text-white px-4 sm:px-6 py-2 rounded-xl text-sm sm:text-base hover:bg-blue-700 disabled:opacity-50"
-        >
-          {loading ? "..." : "Send"}
-        </button>
-        <VoiceRecorder
-          onRecordComplete={(audioBlob) => {
-            // Example: Play the recorded message
-            const audioUrl = URL.createObjectURL(audioBlob);
-            new Audio(audioUrl).play();
-
-            // Add a message to the chat UI
-            setMessages((prev) => [
-              ...prev,
-              { role: "user", content: "🎤 Voice memo sent." },
-            ]);
-
-            // Optionally: send to backend
-            // const formData = new FormData();
-            // formData.append("audio", audioBlob);
-            // await fetch("/api/transcribe", { method: "POST", body: formData });
-          }}
-        />{" "}
-      </div>
+      <ChatInput
+        input={input}
+        setInput={setInput}
+        sendMessage={sendMessage}
+        loading={loading}
+        onVoiceRecord={handleVoiceRecord}
+        onDictate={handleDictate}
+      />
     </div>
   );
 }
