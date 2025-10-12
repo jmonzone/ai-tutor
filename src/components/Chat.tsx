@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import VoiceRecorder from "./VoiceRecorder";
 
 export interface Message {
@@ -18,6 +18,13 @@ export default function Chat({ onSearchWordChange }: ChatProps) {
   ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
 
   async function sendMessage() {
     if (!input.trim()) return;
@@ -52,8 +59,14 @@ export default function Chat({ onSearchWordChange }: ChatProps) {
   }
 
   return (
-    <div className="flex flex-col h-screen max-w-2xl mx-auto">
-      <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-2">
+    <div className="flex flex-col h-full relative">
+      {" "}
+      {/* relative parent */}
+      {/* Message list */}
+      <div
+        ref={messagesContainerRef}
+        className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-2 mb-20" // reserve space for input bar
+      >
         {messages
           .filter((m) => m.role !== "system")
           .map((m, i) => (
@@ -66,9 +79,10 @@ export default function Chat({ onSearchWordChange }: ChatProps) {
               </span>
             </div>
           ))}
+        <div ref={messagesEndRef} />
       </div>
-
-      <div className="sticky bottom-0 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 p-3 sm:p-4 flex gap-2">
+      {/* Input bar */}
+      <div className="absolute bottom-0 left-0 right-0 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 p-3 sm:p-4 flex gap-2">
         <input
           className="flex-1 border rounded-xl px-3 py-2 text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-blue-500"
           value={input}
@@ -100,7 +114,7 @@ export default function Chat({ onSearchWordChange }: ChatProps) {
             // formData.append("audio", audioBlob);
             // await fetch("/api/transcribe", { method: "POST", body: formData });
           }}
-        />
+        />{" "}
       </div>
     </div>
   );
