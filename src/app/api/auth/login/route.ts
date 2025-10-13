@@ -9,24 +9,20 @@ export async function POST(req: Request) {
 
   await connectToDatabase();
 
-  const existing = await User.findOne({ email });
-  if (existing) {
-    return NextResponse.json(
-      { error: "Email already exists" },
-      { status: 400 }
-    );
+  const user = await User.findOne({ email });
+  if (!user) {
+    return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
   }
 
-  const passwordHash = await bcrypt.hash(password, 10);
-
-  const user = await User.create({ email, passwordHash });
+  const isValid = await bcrypt.compare(password, user.passwordHash);
+  if (!isValid) {
+    return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
+  }
 
   const token = sign(
     { userId: user._id, email: user.email },
     process.env.JWT_SECRET!,
-    {
-      expiresIn: "7d",
-    }
+    { expiresIn: "7d" }
   );
 
   return NextResponse.json({
