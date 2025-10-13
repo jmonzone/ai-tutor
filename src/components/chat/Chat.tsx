@@ -3,12 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import ChatMessage from "./ChatMessage";
 import ChatInput from "./ChatInput";
-
-export interface Message {
-  role: "system" | "user" | "assistant";
-  content: string;
-  voiceUrl?: string;
-}
+import { Message } from "@/types/message";
 
 interface ChatProps {
   onSearchWordChange: (word: string) => void;
@@ -16,13 +11,41 @@ interface ChatProps {
 
 export default function Chat({ onSearchWordChange }: ChatProps) {
   const [messages, setMessages] = useState<Message[]>([
-    { role: "system", content: "You are a helpful assistant." },
+    // { role: "system", content: "You are a helpful assistant." },
   ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
 
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const conversationId = "000";
+
+  useEffect(() => {
+    const fetchMessages = async () => {
+      try {
+        const res = await fetch(
+          `/api/messages?conversationId=${conversationId}`
+        );
+        const data = await res.json();
+        if (data.messages) {
+          const mappedMessages: Message[] = data.messages.map((m: Message) => ({
+            role: m.role as "user" | "assistant" | "system",
+            content: m.content,
+            voiceUrl: m.voiceUrl,
+            conversationId: m.conversationId,
+            senderId: m.senderId,
+            createdAt: m.createdAt ? new Date(m.createdAt) : undefined,
+          }));
+          setMessages(mappedMessages);
+        }
+      } catch (err) {
+        console.error("Failed to load messages:", err);
+      }
+    };
+
+    fetchMessages();
+  }, []);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -33,8 +56,14 @@ export default function Chat({ onSearchWordChange }: ChatProps) {
 
     const newMessages = [
       ...messages,
-      { role: "user" as const, content: input }, // <-- add "as const"
+      {
+        role: "user" as const,
+        content: input,
+        conversationId,
+        senderId: "000",
+      },
     ];
+
     setMessages(newMessages);
 
     setInput("");
@@ -49,21 +78,24 @@ export default function Chat({ onSearchWordChange }: ChatProps) {
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: newMessages }),
+        body: JSON.stringify({ conversationId, messages: newMessages }),
       });
       const data = await res.json();
 
       if (data.reply) {
-        setMessages((prev) => [
-          ...prev,
-          {
-            ...data.reply,
-            voiceUrl: `data:audio/mpeg;base64,${data.reply.voiceBase64}`,
-          },
-        ]);
+        const assistantMessage: Message = {
+          role: "assistant",
+          content: data.reply.content,
+          voiceUrl: `data:audio/mpeg;base64,${data.reply.voiceBase64}`,
+          conversationId,
+          senderId: "assistant",
+          createdAt: new Date(data.reply.createdAt),
+        };
+
+        setMessages((prev) => [...prev, assistantMessage]);
 
         // Auto-play voice
-        // new Audio(`data:audio/mpeg;base64,${data.reply.voiceBase64}`).play();
+        // new Audio(assistantMessage.voiceUrl).play();
       }
     } catch (err) {
       console.error("Chat API error:", err);

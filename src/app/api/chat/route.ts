@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
+import { connectToDatabase } from "@/lib/mongodb";
+import { Message } from "@/models/Message";
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -7,9 +9,29 @@ const openai = new OpenAI({
 
 export async function POST(req: NextRequest) {
   try {
-    const { messages } = await req.json();
+    const { conversationId, messages } = await req.json();
 
-    // 1. Get chat text reply
+    console.log(conversationId, messages);
+
+    if (!conversationId) {
+      return NextResponse.json(
+        { error: "Missing conversationId" },
+        { status: 400 }
+      );
+    }
+
+    await connectToDatabase();
+
+    const latestUserMessage = messages[messages.length - 1];
+    if (latestUserMessage?.role === "user") {
+      await Message.create({
+        conversationId,
+        role: "user",
+        content: latestUserMessage.content,
+        senderId: latestUserMessage.senderId,
+      });
+    }
+
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages,
@@ -17,26 +39,28 @@ export async function POST(req: NextRequest) {
 
     const replyText = completion.choices[0].message?.content || "";
 
-    // 2. Generate TTS audio for the reply
     const ttsResponse = await openai.audio.speech.create({
       model: "gpt-4o-mini-tts",
-      voice: "alloy", // choose a voice
+      voice: "alloy",
       input: replyText,
     });
 
-    // Convert TTS response to Base64 so the frontend can play it
     const audioBuffer = Buffer.from(await ttsResponse.arrayBuffer());
     const audioBase64 = audioBuffer.toString("base64");
 
+    const assistantMessage = await Message.create({
+      conversationId,
+      role: "assistant",
+      content: replyText,
+      voiceBase64: audioBase64,
+      senderId: "000",
+    });
+
     return NextResponse.json({
-      reply: {
-        role: "assistant",
-        content: replyText,
-        voiceBase64: audioBase64,
-      },
+      reply: assistantMessage,
     });
   } catch (err) {
-    console.error(err);
+    console.error("Error in chat route:", err);
     return NextResponse.json({ error: "Chat or TTS failed" }, { status: 500 });
   }
 }
