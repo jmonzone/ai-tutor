@@ -7,7 +7,7 @@ export interface MessageDocument extends IMessage, Document {}
 const MessageSchema = new Schema<MessageDocument>(
   {
     conversationId: { type: String, required: true },
-    senderId: { type: String, required: true },
+    userId: { type: String, required: true },
     role: {
       type: String,
       enum: ["system", "user", "assistant"],

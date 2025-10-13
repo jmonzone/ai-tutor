@@ -4,15 +4,15 @@ import { useEffect, useRef, useState } from "react";
 import ChatMessage from "./ChatMessage";
 import ChatInput from "./ChatInput";
 import { Message } from "@/types/message";
+import { fetchWithAuth } from "@/lib/auth";
+import { useUser } from "@/context/UserContext";
 
 interface ChatProps {
   onSearchWordChange: (word: string) => void;
 }
 
 export default function Chat({ onSearchWordChange }: ChatProps) {
-  const [messages, setMessages] = useState<Message[]>([
-    // { role: "system", content: "You are a helpful assistant." },
-  ]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -21,31 +21,33 @@ export default function Chat({ onSearchWordChange }: ChatProps) {
 
   const conversationId = "000";
 
-  useEffect(() => {
-    const fetchMessages = async () => {
-      try {
-        const res = await fetch(
-          `/api/messages?conversationId=${conversationId}`
-        );
-        const data = await res.json();
-        if (data.messages) {
-          const mappedMessages: Message[] = data.messages.map((m: Message) => ({
-            role: m.role as "user" | "assistant" | "system",
-            content: m.content,
-            voiceUrl: m.voiceUrl,
-            conversationId: m.conversationId,
-            senderId: m.senderId,
-            createdAt: m.createdAt ? new Date(m.createdAt) : undefined,
-          }));
-          setMessages(mappedMessages);
-        }
-      } catch (err) {
-        console.error("Failed to load messages:", err);
-      }
-    };
+  const { user } = useUser();
 
+  const fetchMessages = async () => {
+    try {
+      const data = await fetchWithAuth(
+        `/api/messages?conversationId=${conversationId}`
+      );
+
+      if (data.messages) {
+        const mappedMessages: Message[] = data.messages.map((m: Message) => ({
+          role: m.role as "user" | "assistant" | "system",
+          content: m.content,
+          voiceUrl: m.voiceUrl,
+          conversationId: m.conversationId,
+          userId: m.userId,
+          createdAt: m.createdAt ? new Date(m.createdAt) : undefined,
+        }));
+        setMessages(mappedMessages);
+      }
+    } catch (err) {
+      console.error("Failed to load messages:", err);
+    }
+  };
+
+  useEffect(() => {
     fetchMessages();
-  }, []);
+  }, [user]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -60,7 +62,6 @@ export default function Chat({ onSearchWordChange }: ChatProps) {
         role: "user" as const,
         content: input,
         conversationId,
-        senderId: "000",
       },
     ];
 
@@ -75,12 +76,10 @@ export default function Chat({ onSearchWordChange }: ChatProps) {
     // return;
 
     try {
-      const res = await fetch("/api/chat", {
+      const data = await fetchWithAuth("/api/chat", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ conversationId, messages: newMessages }),
       });
-      const data = await res.json();
 
       if (data.reply) {
         const assistantMessage: Message = {
@@ -88,7 +87,7 @@ export default function Chat({ onSearchWordChange }: ChatProps) {
           content: data.reply.content,
           voiceUrl: `data:audio/mpeg;base64,${data.reply.voiceBase64}`,
           conversationId,
-          senderId: "assistant",
+          userId: data.reply.userId,
           createdAt: new Date(data.reply.createdAt),
         };
 

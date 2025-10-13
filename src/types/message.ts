@@ -4,6 +4,6 @@ export interface Message {
   content: string;
   voiceUrl?: string;
   conversationId?: string;
-  senderId?: string;
+  userId?: string;
   createdAt?: Date;
 }

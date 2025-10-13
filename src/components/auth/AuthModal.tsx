@@ -1,23 +1,20 @@
 "use client";
 
+import { useUser } from "@/context/UserContext";
 import { useState } from "react";
 
 interface AuthModalProps {
   mode: "login" | "signup";
   isOpen: boolean;
   onClose: () => void;
-  onSuccess: (email: string, token: string) => void; // new
 }
 
-export default function AuthModal({
-  mode,
-  isOpen,
-  onClose,
-  onSuccess,
-}: AuthModalProps) {
+export default function AuthModal({ mode, isOpen, onClose }: AuthModalProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+
+  const { setUser } = useUser();
 
   if (!isOpen) return null;
 
@@ -36,8 +33,9 @@ export default function AuthModal({
       if (data.error) {
         alert(data.error);
       } else {
-        console.log(data);
-        onSuccess(email, data.token);
+        setUser({ id: data.userId, email });
+        localStorage.setItem("token", data.token);
+        onClose();
       }
     } catch (err) {
       console.error(err);

@@ -42,3 +42,28 @@ export async function connectToDatabase() {
 
   return cached!.conn;
 }
+
+import { NextRequest } from "next/server";
+import { verify } from "jsonwebtoken";
+
+export async function getUserAndConnect(req: NextRequest) {
+  let userId: string | null = null;
+
+  const token = req.headers.get("Authorization")?.split(" ")[1];
+  if (token) {
+    try {
+      const payload = verify(token, process.env.JWT_SECRET!) as {
+        userId: string;
+      };
+      userId = payload.userId;
+    } catch {
+      console.warn("Invalid token, proceeding as guest");
+    }
+  }
+
+  if (userId) {
+    await connectToDatabase();
+  }
+
+  return userId;
+}

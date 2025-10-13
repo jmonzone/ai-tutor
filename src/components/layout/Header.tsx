@@ -2,17 +2,19 @@
 
 import { useState, useEffect } from "react";
 import AuthModal from "../auth/AuthModal";
+import { useUser } from "@/context/UserContext"; // adjust path if needed
 
 export default function Header() {
   const [modalMode, setModalMode] = useState<"login" | "signup" | null>(null);
-  const [userEmail, setUserEmail] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
+
+  const { user, setUser } = useUser();
 
   useEffect(() => {
     const validateSession = async () => {
       const token = localStorage.getItem("token");
-      const email = localStorage.getItem("userEmail");
-      if (!token || !email) {
+      console.log(token);
+      if (!token) {
         setMounted(true);
         return;
       }
@@ -27,31 +29,22 @@ export default function Header() {
         const data = await res.json();
 
         if (data.valid) {
-          setUserEmail(email);
+          setUser({ id: data.userId, email: data.email });
         } else {
           localStorage.removeItem("token");
-          localStorage.removeItem("userEmail");
-          setUserEmail(null);
+          setUser(null);
         }
       } catch (err) {
         console.error(err);
         localStorage.removeItem("token");
-        localStorage.removeItem("userEmail");
-        setUserEmail(null);
+        setUser(null);
       } finally {
         setMounted(true);
       }
     };
 
     validateSession();
-  }, []);
-
-  const handleAuthSuccess = (email: string, token: string) => {
-    localStorage.setItem("token", token);
-    localStorage.setItem("userEmail", email);
-    setUserEmail(email);
-    setModalMode(null);
-  };
+  }, [setUser]);
 
   const handleLogout = async () => {
     try {
@@ -59,19 +52,18 @@ export default function Header() {
       const data = await res.json();
       if (data.success) {
         localStorage.removeItem("token");
-        localStorage.removeItem("userEmail");
-        setUserEmail(null);
+        setUser(null);
       }
     } catch (err) {
       console.error(err);
     }
   };
 
-  if (!mounted) return null; // prevent flash on SSR
+  if (!mounted) return null;
 
   return (
     <header className="w-full bg-black shadow-sm border-b border-gray-200 flex justify-end items-center h-14 px-6">
-      {!userEmail ? (
+      {!user ? (
         <>
           <button
             className="mr-2 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition"
@@ -88,7 +80,7 @@ export default function Header() {
         </>
       ) : (
         <>
-          <span className="text-white mr-4">Welcome, {userEmail}</span>
+          <span className="text-white mr-4">Welcome, {user.email}</span>
           <button
             className="px-4 py-2 bg-red-500 text-white rounded"
             onClick={handleLogout}
@@ -103,7 +95,6 @@ export default function Header() {
           mode={modalMode}
           isOpen={!!modalMode}
           onClose={() => setModalMode(null)}
-          onSuccess={handleAuthSuccess}
         />
       )}
     </header>
