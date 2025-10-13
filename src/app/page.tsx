@@ -15,12 +15,12 @@ export default function HomePage() {
       </div>
       <div className="flex flex-col-reverse md:flex-row flex-1 overflow-hidden">
         {/* Chat */}
-        <div className="w-full md:w-1/2 h-1/2 md:h-full overflow-auto md:border-r border-gray-300">
+        <div className="w-full md:w-1/2 flex-1 min-h-0 overflow-auto md:border-r border-gray-300">
           <Chat onSearchWordChange={setSearchWord} />
         </div>
 
         {/* PDF Viewer */}
-        <div className="w-full md:w-1/2 h-1/2 md:h-full overflow-auto">
+        <div className="w-full md:w-1/2 flex-1 min-h-0 overflow-auto">
           <PdfViewer url="/sample.pdf" searchWord={searchWord} />
         </div>
       </div>
