@@ -9,11 +9,11 @@ import type { Highlight } from "@/types/highlight";
 pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
 
 interface PdfViewerProps {
-  url: string;
+  file: File;
   searchWord?: string;
 }
 
-export default function PdfViewerInner({ url, searchWord }: PdfViewerProps) {
+export default function PdfViewerInner({ file, searchWord }: PdfViewerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const pdfRef = useRef<PDFDocumentProxy | null>(null);
   const [numPages, setNumPages] = useState(0);
@@ -107,7 +107,7 @@ export default function PdfViewerInner({ url, searchWord }: PdfViewerProps) {
         className="flex-1 overflow-y-auto overflow-x-hidden p-4"
       >
         <Document
-          file={url}
+          file={file}
           onLoadSuccess={onDocumentLoadSuccess}
           className="flex flex-col items-center gap-4"
         >
