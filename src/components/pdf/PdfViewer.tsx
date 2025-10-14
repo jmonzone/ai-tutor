@@ -1,5 +1,7 @@
 "use client";
 
+import { useUser } from "@/context/UserContext";
+import { fetchWithAuth } from "@/lib/auth";
 import dynamic from "next/dynamic";
 import React, { useState, useCallback } from "react";
 import { useDropzone } from "react-dropzone";
@@ -15,11 +17,37 @@ interface PdfViewerProps {
 export default function PdfViewer(props: PdfViewerProps) {
   const [pdfFile, setPdfFile] = useState<File | null>(null);
 
-  const onDrop = useCallback((acceptedFiles: File[]) => {
-    if (acceptedFiles && acceptedFiles[0]) {
-      setPdfFile(acceptedFiles[0]);
-    }
-  }, []);
+  const { user } = useUser();
+
+  const onDrop = useCallback(
+    async (acceptedFiles: File[]) => {
+      if (!acceptedFiles || !acceptedFiles[0]) return;
+
+      const targetFile = acceptedFiles[0];
+
+      if (user) {
+        const { uploadUrl, id } = await fetchWithAuth("/api/chat/file", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            filename: targetFile.name,
+            fileType: targetFile.type,
+          }),
+        });
+
+        await fetch(uploadUrl, {
+          method: "PUT",
+          headers: { "Content-Type": targetFile.type }, // must match exactly
+          body: targetFile,
+        });
+
+        console.log("PDF uploaded! Mongo ID:", id);
+      }
+
+      setPdfFile(targetFile);
+    },
+    [user]
+  );
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,

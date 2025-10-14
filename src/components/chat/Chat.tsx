@@ -26,7 +26,7 @@ export default function Chat({ onSearchWordChange }: ChatProps) {
   const fetchMessages = async () => {
     try {
       const data = await fetchWithAuth(
-        `/api/messages?conversationId=${conversationId}`
+        `/api/chat/messages?conversationId=${conversationId}`
       );
 
       if (data.messages) {
