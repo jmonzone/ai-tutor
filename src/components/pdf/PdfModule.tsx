@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import FileDrop from "./Filedrop";
+import FileDrop from "../ui/Filedrop";
 import { useUser } from "@/context/UserContext";
 import { fetchWithAuth } from "@/lib/auth";
 import Chat from "../chat/Chat";
