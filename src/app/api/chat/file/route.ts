@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+import {
+  S3Client,
+  PutObjectCommand,
+  GetObjectCommand,
+} from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { getUserAndConnect } from "@/lib/mongodb";
 import { File } from "@/models/File";
@@ -55,6 +59,38 @@ export async function POST(req: NextRequest) {
     console.error("Upload route error:", err);
     return NextResponse.json(
       { error: "Failed to create upload URL" },
+      { status: 500 }
+    );
+  }
+}
+
+export async function GET(req: NextRequest) {
+  try {
+    const { searchParams } = new URL(req.url);
+    const s3Key = searchParams.get("file")?.trim(); // trim to avoid empty strings
+
+    console.log(s3Key);
+    if (!s3Key) {
+      console.log("non existian");
+
+      return NextResponse.json(
+        { error: "Missing or invalid 'file' parameter" },
+        { status: 400 }
+      );
+    }
+
+    const command = new GetObjectCommand({
+      Bucket: process.env.AWS_S3_BUCKET!,
+      Key: s3Key,
+    });
+
+    const signedUrl = await getSignedUrl(s3, command, { expiresIn: 60 });
+    console.log(signedUrl);
+    return NextResponse.json({ url: signedUrl });
+  } catch (err) {
+    console.error("Download route error:", err);
+    return NextResponse.json(
+      { error: "Failed to fetch file" },
       { status: 500 }
     );
   }

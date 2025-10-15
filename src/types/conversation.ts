@@ -1,17 +1,18 @@
+import { defaultMetaData, FileMetadata } from "./fileMetadata";
 import { Message } from "./message";
 
 export interface Conversation {
   id: string;
   userId: string;
   title: string;
+  file: FileMetadata;
   messages: Message[];
-  file: File | null;
 }
 
 export const defaultConversation: Conversation = {
   id: "default",
-  title: "New Conversation",
-  messages: [],
   userId: "default",
-  file: null,
+  title: "New Conversation",
+  file: defaultMetaData,
+  messages: [],
 };

@@ -11,11 +11,12 @@ import {
 } from "react";
 import { useUser } from "./UserContext";
 import { Message } from "@/types/message";
+import { FileMetadata } from "@/types/fileMetadata";
 
 interface ConversationContextValue {
-  conversation: Conversation;
+  conversation: Conversation | null;
   conversations: Conversation[];
-  createNewConversation: () => Promise<Conversation | null>;
+  createNewConversation: (file: FileMetadata) => Promise<Conversation | null>;
   selectConversation: (conversation: Conversation) => void;
   sendMessage: (message: Message) => void;
 }
@@ -25,8 +26,7 @@ const ConvseationContext = createContext<ConversationContextValue | undefined>(
 );
 
 export const ConversationProvider = ({ children }: { children: ReactNode }) => {
-  const [conversation, setConversation] =
-    useState<Conversation>(defaultConversation);
+  const [conversation, setConversation] = useState<Conversation | null>(null);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const { user } = useUser();
 
@@ -35,59 +35,25 @@ export const ConversationProvider = ({ children }: { children: ReactNode }) => {
   }, [user]);
 
   const fetchConversations = async () => {
-    console.log(user.role);
-    if (user.role == "guest") {
-      setConversation(defaultConversation);
-      setConversations([defaultConversation]);
-      return;
-    }
-
     try {
       const data = await fetchWithAuth("/api/chat/conversations", {
         method: "GET",
       });
       const conversations: Conversation[] = data.conversations || [];
 
-      // if there are none, use placeholder
-      if (conversations.length === 0) {
-        setConversation(defaultConversation);
-        setConversations([defaultConversation]);
-        return;
-      }
-
       setConversations(conversations);
-
-      // auto select conversation if one doesnt exist
-      const currentExists = conversations.some(
-        (c) => c.id === conversation?.id
-      );
-      if (!currentExists) {
-        setConversation(conversations[0]);
-      }
     } catch (err) {
       console.error("Failed to fetch conversations:", err);
-      setConversation(defaultConversation);
-      setConversations([defaultConversation]);
     }
   };
 
   const sendMessage = async (newMessage: Message) => {
     if (!conversation) return;
 
-    let convToUpdate: Conversation;
-
-    // if signed in replace placeholder with saved conversation
-    if (user.role == "student" && conversation.id === "default") {
-      const newConv = await createNewConversation(newMessage);
-      if (!newConv) return;
-
-      convToUpdate = { ...newConv, messages: [newMessage] };
-    } else {
-      convToUpdate = {
-        ...conversation,
-        messages: [...(conversation.messages || []), newMessage],
-      };
-    }
+    const convToUpdate = {
+      ...conversation,
+      messages: [...(conversation.messages || []), newMessage],
+    };
 
     setConversation(convToUpdate);
     setConversations((prevConvs) =>
@@ -159,24 +125,18 @@ export const ConversationProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const createNewConversation = async (
-    firstMessage?: Message
+    file: FileMetadata
   ): Promise<Conversation | null> => {
     try {
       const data = await fetchWithAuth("/api/chat/conversations", {
         method: "POST",
-        body: JSON.stringify({ title: "New Conversation" }),
+        body: JSON.stringify({ title: "New Conversation", fileId: file.id }),
       });
 
       if (!data?.conversation) return null;
 
       const newConv: Conversation = data.conversation;
-
-      if (firstMessage) {
-        firstMessage.conversationId = newConv.id;
-        newConv.messages = [firstMessage];
-      } else {
-        newConv.messages = [];
-      }
+      newConv.file = file;
 
       setConversation(newConv);
       setConversations((prevConvs) => {

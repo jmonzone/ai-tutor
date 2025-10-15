@@ -1,17 +1,19 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Document, Types } from "mongoose";
 
-function convertObjectIdsToStrings(obj: any): any {
+function convertObjectIdsToStringsAndIds(obj: any): any {
   if (obj instanceof Types.ObjectId) {
     return obj.toString();
   } else if (Array.isArray(obj)) {
-    return obj.map(convertObjectIdsToStrings);
+    return obj.map(convertObjectIdsToStringsAndIds);
   } else if (obj && typeof obj === "object") {
     return Object.fromEntries(
-      Object.entries(obj).map(([key, value]) => [
-        key,
-        convertObjectIdsToStrings(value),
-      ])
+      Object.entries(obj).map(([key, value]) => {
+        const newValue = convertObjectIdsToStringsAndIds(value);
+        // Convert _id to id
+        if (key === "_id") return ["id", newValue];
+        return [key, newValue];
+      })
     );
   } else {
     return obj;
@@ -20,9 +22,7 @@ function convertObjectIdsToStrings(obj: any): any {
 
 export function toFrontend<T extends Document>(doc: T): Record<string, any> {
   const obj = doc.toObject();
-  const { _id, ...rest } = obj;
-  const converted = convertObjectIdsToStrings(rest);
-  return { id: _id.toString(), ...converted }; // id at top
+  return convertObjectIdsToStringsAndIds(obj); // recursive conversion
 }
 
 export function toFrontendArray<T extends Document>(

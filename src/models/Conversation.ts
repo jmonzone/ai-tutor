@@ -11,8 +11,8 @@ const ConversationSchema = new Schema<ConversationDocument>(
   {
     userId: { type: String, ref: "User", required: true },
     title: { type: String, default: "New Conversation" },
-    messages: [{ type: String, ref: "Message" }],
     file: { type: String, ref: "File", default: null },
+    messages: [{ type: String, ref: "Message" }],
   },
   { timestamps: true }
 );

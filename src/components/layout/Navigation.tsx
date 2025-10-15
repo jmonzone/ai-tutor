@@ -20,7 +20,7 @@ export default function Navigation() {
         onClick={() => createNewConversation()}
         className="flex items-center gap-2 p-3 m-3 bg-gray-800 hover:bg-gray-700 rounded-xl"
       >
-        New Chat
+        Upload PDF
       </button>
 
       <div className="flex-1 overflow-y-auto">
