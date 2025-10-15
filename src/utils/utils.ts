@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Document, Types } from "mongoose";
 
 function convertObjectIdsToStrings(obj: any): any {
