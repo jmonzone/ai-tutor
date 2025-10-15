@@ -5,13 +5,9 @@ import { Document, pdfjs } from "react-pdf";
 import type { PDFDocumentProxy } from "pdfjs-dist/types/src/display/api";
 import PageWrapper from "./PageWrapper";
 import type { Highlight } from "@/types/highlight";
+import { PdfViewerProps } from "./PdfViewer";
 
 pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
-
-interface PdfViewerProps {
-  file: File;
-  searchWord?: string;
-}
 
 export default function PdfViewerInner({ file, searchWord }: PdfViewerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
