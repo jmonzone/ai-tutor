@@ -1,11 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import OpenAI from "openai";
-import { Message } from "@/models/Message";
+import { openai } from "@/lib/openai";
 import { getUserAndConnect } from "@/lib/mongodb";
-
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+import { Conversation } from "@/models/Conversation";
+import { Message } from "@/models/Message";
 
 export async function POST(req: NextRequest) {
   try {
@@ -22,14 +19,6 @@ export async function POST(req: NextRequest) {
     }
 
     const latestUserMessage = messages[messages.length - 1];
-    if (latestUserMessage?.role === "user" && userId) {
-      await Message.create({
-        conversationId,
-        role: "user",
-        content: latestUserMessage.content,
-        userId,
-      });
-    }
 
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
@@ -47,23 +36,31 @@ export async function POST(req: NextRequest) {
     const audioBuffer = Buffer.from(await ttsResponse.arrayBuffer());
     const audioBase64 = audioBuffer.toString("base64");
 
-    let assistantMessage;
-    if (userId) {
-      assistantMessage = await Message.create({
-        conversationId,
-        role: "assistant",
-        content: replyText,
-        voiceBase64: audioBase64,
-        userId,
-      });
-    } else {
-      assistantMessage = {
-        conversationId,
-        role: "assistant",
-        content: replyText,
-        voiceBase64: audioBase64,
-        userId,
-      };
+    const assistantMessage = {
+      userId,
+      conversationId,
+      role: "assistant",
+      content: replyText,
+      voiceBase64: audioBase64,
+    };
+
+    if (userId && conversationId) {
+      (async () => {
+        try {
+          const [userMsgDoc, assistantMsgDoc] = await Promise.all([
+            Message.create(latestUserMessage),
+            Message.create(assistantMessage),
+          ]);
+
+          await Conversation.findByIdAndUpdate(conversationId, {
+            $push: {
+              messages: { $each: [userMsgDoc._id, assistantMsgDoc._id] },
+            },
+          });
+        } catch (err) {
+          console.error("Background save failed:", err);
+        }
+      })();
     }
 
     return NextResponse.json({ reply: assistantMessage });

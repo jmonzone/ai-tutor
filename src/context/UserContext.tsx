@@ -1,17 +1,17 @@
 "use client";
 
-import { User } from "@/types/user";
+import { guest, User } from "@/types/user";
 import { createContext, useContext, useState, ReactNode } from "react";
 
 interface UserContextValue {
-  user: User | null;
-  setUser: (user: User | null) => void;
+  user: User;
+  setUser: (user: User) => void;
 }
 
 const UserContext = createContext<UserContextValue | undefined>(undefined);
 
 export const UserProvider = ({ children }: { children: ReactNode }) => {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<User>(guest);
 
   return (
     <UserContext.Provider value={{ user, setUser }}>

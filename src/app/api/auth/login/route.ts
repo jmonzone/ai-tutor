@@ -1,8 +1,8 @@
 import { connectToDatabase } from "@/lib/mongodb";
 import { User } from "@/models/User";
 import { NextResponse } from "next/server";
-import bcrypt from "bcrypt";
 import { sign } from "jsonwebtoken";
+import { toFrontend } from "@/utils/utils";
 
 export async function POST(req: Request) {
   const { email, password } = await req.json();
@@ -14,7 +14,8 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
   }
 
-  const isValid = await bcrypt.compare(password, user.passwordHash);
+  const isValid = await user.comparePassword(password);
+
   if (!isValid) {
     return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
   }
@@ -28,7 +29,6 @@ export async function POST(req: Request) {
   return NextResponse.json({
     success: true,
     token,
-    userId: user._id,
-    email: user.email,
+    user: toFrontend(user),
   });
 }

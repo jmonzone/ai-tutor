@@ -4,7 +4,6 @@ export interface FileDocument extends Document {
   userId: string;
   filename: string;
   s3Key: string;
-  createdAt: Date;
 }
 
 const FileSchema = new Schema<FileDocument>(

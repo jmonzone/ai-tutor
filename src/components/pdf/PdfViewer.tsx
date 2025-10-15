@@ -25,7 +25,7 @@ export default function PdfViewer(props: PdfViewerProps) {
 
       const targetFile = acceptedFiles[0];
 
-      if (user) {
+      if (user.role == "student") {
         const { uploadUrl, id } = await fetchWithAuth("/api/chat/file", {
           method: "POST",
           headers: { "Content-Type": "application/json" },

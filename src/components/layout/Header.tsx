@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import AuthModal from "../auth/AuthModal";
 import { useUser } from "@/context/UserContext"; // adjust path if needed
+import { guest } from "@/types/user";
 
 export default function Header() {
   const [modalMode, setModalMode] = useState<"login" | "signup" | null>(null);
@@ -13,7 +14,6 @@ export default function Header() {
   useEffect(() => {
     const validateSession = async () => {
       const token = localStorage.getItem("token");
-      console.log(token);
       if (!token) {
         setMounted(true);
         return;
@@ -29,15 +29,15 @@ export default function Header() {
         const data = await res.json();
 
         if (data.valid) {
-          setUser({ id: data.userId, email: data.email });
+          setUser({ id: data.userId, email: data.email, role: "student" });
         } else {
           localStorage.removeItem("token");
-          setUser(null);
+          setUser(guest);
         }
       } catch (err) {
         console.error(err);
         localStorage.removeItem("token");
-        setUser(null);
+        setUser(guest);
       } finally {
         setMounted(true);
       }
@@ -52,7 +52,7 @@ export default function Header() {
       const data = await res.json();
       if (data.success) {
         localStorage.removeItem("token");
-        setUser(null);
+        setUser(guest);
       }
     } catch (err) {
       console.error(err);
@@ -63,7 +63,7 @@ export default function Header() {
 
   return (
     <header className="w-full bg-black shadow-sm border-b border-gray-200 flex justify-end items-center h-14 px-6">
-      {!user ? (
+      {user.role == "guest" ? (
         <>
           <button
             className="mr-2 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition"

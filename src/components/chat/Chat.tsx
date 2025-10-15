@@ -4,8 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import ChatMessage from "./ChatMessage";
 import ChatInput from "./ChatInput";
 import { Message } from "@/types/message";
-import { fetchWithAuth } from "@/lib/auth";
 import { useUser } from "@/context/UserContext";
+import { useConversations } from "@/context/ConversationProvider";
 
 interface ChatProps {
   onSearchWordChange: (word: string) => void;
@@ -19,89 +19,44 @@ export default function Chat({ onSearchWordChange }: ChatProps) {
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const conversationId = "000";
-
   const { user } = useUser();
+  const { conversation, sendMessage } = useConversations();
 
-  const fetchMessages = async () => {
-    try {
-      const data = await fetchWithAuth(
-        `/api/chat/messages?conversationId=${conversationId}`
-      );
-
-      if (data.messages) {
-        const mappedMessages: Message[] = data.messages.map((m: Message) => ({
-          role: m.role as "user" | "assistant" | "system",
-          content: m.content,
-          voiceUrl: m.voiceUrl,
-          conversationId: m.conversationId,
-          userId: m.userId,
-          createdAt: m.createdAt ? new Date(m.createdAt) : undefined,
-        }));
-        setMessages(mappedMessages);
-      }
-    } catch (err) {
-      console.error("Failed to load messages:", err);
+  useEffect(() => {
+    if (conversation) {
+      setMessages(conversation.messages);
+      setLoading(false);
+    } else {
+      setMessages([]);
     }
-  };
+  }, [conversation]);
 
   useEffect(() => {
-    fetchMessages();
-  }, [user]);
-
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    messagesEndRef.current?.scrollIntoView();
   }, [messages]);
 
-  async function sendMessage() {
-    if (!input.trim()) return;
-
-    const newMessages = [
-      ...messages,
-      {
-        role: "user" as const,
-        content: input,
-        conversationId,
-      },
-    ];
-
+  const sendMessageWrapper = (message: Message) => {
+    const newMessages = [...messages, message];
     setMessages(newMessages);
-
+    sendMessage(message);
     setInput("");
     setLoading(true);
+  };
 
-    // console.log("input", input);
-    // update the PDF search word immediately
+  const handleSendMessage = () => {
+    if (!input.trim()) return;
+    if (!conversation) return;
+
+    const newMessage = {
+      userId: user.id,
+      conversationId: conversation.id,
+      role: "user" as const,
+      content: input,
+    };
+
+    sendMessageWrapper(newMessage);
     onSearchWordChange(input);
-    // return;
-
-    try {
-      const data = await fetchWithAuth("/api/chat", {
-        method: "POST",
-        body: JSON.stringify({ conversationId, messages: newMessages }),
-      });
-
-      if (data.reply) {
-        const assistantMessage: Message = {
-          role: "assistant",
-          content: data.reply.content,
-          voiceUrl: `data:audio/mpeg;base64,${data.reply.voiceBase64}`,
-          conversationId,
-          userId: data.reply.userId,
-          createdAt: new Date(data.reply.createdAt),
-        };
-
-        setMessages((prev) => [...prev, assistantMessage]);
-
-        // Auto-play voice
-        // new Audio(assistantMessage.voiceUrl).play();
-      }
-    } catch (err) {
-      console.error("Chat API error:", err);
-    } finally {
-      setLoading(false);
-    }
-  }
+  };
 
   const handleVoiceRecord = async (audioBlob: Blob, transcript: string) => {
     const audioUrl = URL.createObjectURL(audioBlob);
@@ -109,47 +64,21 @@ export default function Chat({ onSearchWordChange }: ChatProps) {
 
     console.log("handleVoiceRecord", trimmedTranscript);
 
-    // Play audio
     new Audio(audioUrl).play();
 
-    // Prepare new message
     const newMessage: Message = {
+      userId: user.id,
+      conversationId: conversation.id,
       role: "user",
       content: trimmedTranscript || "🎤 Voice memo sent.",
       voiceUrl: audioUrl,
     };
 
-    // Update state first
-    setMessages((prev) => [...prev, newMessage]);
-
-    // Send to OpenAI if transcript exists
-    if (trimmedTranscript) {
-      // get the latest messages including the new one
-      const currentMessages = [...messages, newMessage]; // OR use functional update if messages might be stale
-      postMessages(currentMessages);
-    }
-  };
-
-  const postMessages = async (messages: Message[]) => {
-    console.log("posting messages to openAI");
-    try {
-      const res = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages }),
-      });
-      const data = await res.json();
-      if (data.reply) {
-        setMessages((prev: Message[]) => [...prev, data.reply]);
-      }
-    } catch (err) {
-      console.error("Chat API error:", err);
-    }
+    sendMessageWrapper(newMessage);
   };
 
   const handleDictate = (text: string) => {
     console.log("handleDictate", text);
-
     setInput(text);
   };
 
@@ -170,7 +99,7 @@ export default function Chat({ onSearchWordChange }: ChatProps) {
       <ChatInput
         input={input}
         setInput={setInput}
-        sendMessage={sendMessage}
+        sendMessage={handleSendMessage}
         loading={loading}
         onVoiceRecord={handleVoiceRecord}
         onDictate={handleDictate}

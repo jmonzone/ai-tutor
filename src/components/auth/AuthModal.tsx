@@ -18,6 +18,7 @@ export default function AuthModal({ mode, isOpen, onClose }: AuthModalProps) {
 
   if (!isOpen) return null;
 
+  //todo: append logic to useUser
   const handleSubmit = async () => {
     setLoading(true);
     const endpoint = `/api/auth/${mode}`;
@@ -33,7 +34,7 @@ export default function AuthModal({ mode, isOpen, onClose }: AuthModalProps) {
       if (data.error) {
         alert(data.error);
       } else {
-        setUser({ id: data.userId, email });
+        setUser({ id: data.userId, email, role: "student" });
         localStorage.setItem("token", data.token);
         onClose();
       }
