@@ -6,6 +6,7 @@ export interface Conversation {
   userId: string;
   title: string;
   file: FileMetadata;
+  fileText: string;
   messages: Message[];
 }
 
@@ -14,5 +15,6 @@ export const defaultConversation: Conversation = {
   userId: "default",
   title: "New Conversation",
   file: defaultMetaData,
+  fileText: "",
   messages: [],
 };

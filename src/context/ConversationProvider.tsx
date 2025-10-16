@@ -19,6 +19,7 @@ interface ConversationContextValue {
   createNewConversation: (file: FileMetadata) => Promise<Conversation | null>;
   selectConversation: (conversation: Conversation) => void;
   sendMessage: (message: Message) => void;
+  setFileText: (text: string) => void;
 }
 
 const ConvseationContext = createContext<ConversationContextValue | undefined>(
@@ -28,6 +29,9 @@ const ConvseationContext = createContext<ConversationContextValue | undefined>(
 export const ConversationProvider = ({ children }: { children: ReactNode }) => {
   const [conversation, setConversation] = useState<Conversation | null>(null);
   const [conversations, setConversations] = useState<Conversation[]>([]);
+
+  const [fileText, setFileText] = useState<string>("");
+
   const { user } = useUser();
 
   useEffect(() => {
@@ -54,6 +58,7 @@ export const ConversationProvider = ({ children }: { children: ReactNode }) => {
     const convToUpdate = {
       ...conversation,
       messages: [...(conversation.messages || []), newMessage],
+      fileText,
     };
 
     setConversation(convToUpdate);
@@ -67,12 +72,10 @@ export const ConversationProvider = ({ children }: { children: ReactNode }) => {
     fetchAIResponse(convToUpdate);
   };
 
-  const updateTitle = async (conv: Conversation) => {
+  const updateTitle = async (conversation: Conversation) => {
     const data = await fetchWithAuth("/api/chat/conversations/title", {
       method: "POST",
-      body: JSON.stringify({
-        conversation: conv,
-      }),
+      body: JSON.stringify({ conversation }),
     });
 
     if (data.title) {
@@ -81,19 +84,20 @@ export const ConversationProvider = ({ children }: { children: ReactNode }) => {
       );
       setConversations((prevConvs) =>
         prevConvs.map((c) =>
-          c.id === conv.id ? { ...c, title: data.title } : c
+          c.id === conversation.id ? { ...c, title: data.title } : c
         )
       );
     }
   };
 
-  const fetchAIResponse = async (conv: Conversation) => {
+  const fetchAIResponse = async (conversation: Conversation) => {
     try {
       const data = await fetchWithAuth("/api/chat/send", {
         method: "POST",
         body: JSON.stringify({
-          conversationId: conv.id,
-          messages: conv.messages,
+          conversationId: conversation.id,
+          messages: conversation.messages,
+          fileText: conversation.fileText,
         }),
       });
 
@@ -104,7 +108,7 @@ export const ConversationProvider = ({ children }: { children: ReactNode }) => {
         role: "assistant",
         content: data.reply.content,
         voiceUrl: data.reply.voiceBase64,
-        conversationId: conv.id,
+        conversationId: conversation.id,
       };
 
       setConversation((prev) =>
@@ -112,7 +116,7 @@ export const ConversationProvider = ({ children }: { children: ReactNode }) => {
       );
       setConversations((prev) =>
         prev.map((c) =>
-          c.id === conv.id
+          c.id === conversation.id
             ? { ...c, messages: [...c.messages, assistantMsg] }
             : c
         )
@@ -162,6 +166,7 @@ export const ConversationProvider = ({ children }: { children: ReactNode }) => {
         createNewConversation,
         selectConversation: setConversation,
         sendMessage,
+        setFileText,
       }}
     >
       {children}

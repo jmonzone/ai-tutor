@@ -1,7 +1,10 @@
-export interface Message {
+export interface Message extends OpenAIMessage {
   userId: string;
   conversationId: string;
-  role: "system" | "user" | "assistant";
-  content: string;
   voiceUrl?: string;
+}
+
+export interface OpenAIMessage {
+  role: "user" | "assistant" | "system";
+  content: string;
 }

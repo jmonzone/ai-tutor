@@ -10,6 +10,7 @@ const PdfViewerInner = dynamic(() => import("./PdfViewerInner"), {
 export interface PdfViewerProps {
   file: File;
   searchWord?: string;
+  onTextLoaded: (text: string) => void;
 }
 
 export default function PdfViewer(props: PdfViewerProps) {

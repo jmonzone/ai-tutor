@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { Document, pdfjs } from "react-pdf";
+import { Document, pdfjs, TextItem } from "react-pdf";
 import type { PDFDocumentProxy } from "pdfjs-dist";
 import PageWrapper from "./PageWrapper";
 import type { Highlight } from "@/types/highlight";
@@ -9,7 +9,11 @@ import { PdfViewerProps } from "./PdfViewer";
 
 pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
 
-export default function PdfViewerInner({ file, searchWord }: PdfViewerProps) {
+export default function PdfViewerInner({
+  file,
+  searchWord,
+  onTextLoaded,
+}: PdfViewerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const pdfRef = useRef<PDFDocumentProxy | null>(null);
 
@@ -31,9 +35,25 @@ export default function PdfViewerInner({ file, searchWord }: PdfViewerProps) {
     return () => window.removeEventListener("resize", updateWidth);
   }, []);
 
-  const onDocumentLoadSuccess = (pdf: PDFDocumentProxy) => {
+  const onDocumentLoadSuccess = async (pdf: PDFDocumentProxy) => {
     pdfRef.current = pdf;
     setNumPages(pdf.numPages);
+
+    let fullText = "";
+
+    for (let i = 1; i <= pdf.numPages; i++) {
+      const page = await pdf.getPage(i);
+      const content = await page.getTextContent();
+
+      const pageText = content.items
+        .map((item) => (item as TextItem).str)
+        .join(" ");
+
+      fullText += pageText + "\n\n";
+    }
+
+    console.log("Full PDF Text:", fullText);
+    onTextLoaded(fullText);
   };
 
   useEffect(() => {

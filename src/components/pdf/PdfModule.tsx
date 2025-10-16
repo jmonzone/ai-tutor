@@ -14,7 +14,8 @@ export default function PdfModule() {
 
   const { user } = useUser();
 
-  const { conversation, createNewConversation } = useConversations();
+  const { conversation, createNewConversation, setFileText } =
+    useConversations();
   const [file, setFile] = useState<File | null>(null);
   const lastConversationId = useRef<string | null>(null); // useRef avoids re-renders
 
@@ -81,7 +82,11 @@ export default function PdfModule() {
         <Chat onSearchWordChange={setSearchWord} />
       </div>
       <div className="w-full md:w-1/2 flex-1 min-h-0 overflow-auto">
-        <PdfViewer file={file} searchWord={searchWord} />
+        <PdfViewer
+          file={file}
+          searchWord={searchWord}
+          onTextLoaded={setFileText}
+        />
       </div>
     </div>
   );
