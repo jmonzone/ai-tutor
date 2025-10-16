@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { getUserAndConnect } from "@/lib/mongodb";
 import { Conversation } from "@/models/Conversation";
 import { toFrontend, toFrontendArray } from "@/utils/utils";
-import { File } from "@/models/File";
+import "@/models/File";
+import "@/models/Message";
 
 export async function GET(req: NextRequest) {
   const userId = await getUserAndConnect(req);
@@ -12,7 +13,8 @@ export async function GET(req: NextRequest) {
   try {
     const conversations = await Conversation.find({ userId })
       .sort({ updatedAt: -1 })
-      .populate({ path: "file" });
+      .populate({ path: "file" })
+      .populate({ path: "messages" });
 
     return NextResponse.json({ conversations: toFrontendArray(conversations) });
   } catch (err) {

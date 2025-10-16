@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { Document, pdfjs } from "react-pdf";
-import type { PDFDocumentProxy } from "pdfjs-dist/types/src/display/api";
+import type { PDFDocumentProxy } from "pdfjs-dist";
 import PageWrapper from "./PageWrapper";
 import type { Highlight } from "@/types/highlight";
 import { PdfViewerProps } from "./PdfViewer";
@@ -12,13 +12,14 @@ pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
 export default function PdfViewerInner({ file, searchWord }: PdfViewerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const pdfRef = useRef<PDFDocumentProxy | null>(null);
+
   const [numPages, setNumPages] = useState(0);
   const [pageWidth, setPageWidth] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [scrollToPage, setScrollToPage] = useState<number | null>(null);
   const [highlights, setHighlights] = useState<Record<number, Highlight[]>>({});
+  const [loadId, setLoadId] = useState(0);
 
-  // Update page width on resize
   useEffect(() => {
     const updateWidth = () => {
       if (containerRef.current) {
@@ -35,66 +36,50 @@ export default function PdfViewerInner({ file, searchWord }: PdfViewerProps) {
     setNumPages(pdf.numPages);
   };
 
-  // Search for the word
+  useEffect(() => {
+    setNumPages(0);
+    setHighlights({});
+    setScrollToPage(null);
+    setCurrentPage(1);
+    setLoadId((prev) => prev + 1);
+  }, [file]);
+
   useEffect(() => {
     if (!searchWord || !pdfRef.current) return;
+    const currentId = loadId;
 
     const findWord = async () => {
-      if (!pdfRef.current) return;
-
+      const pdf = pdfRef.current;
+      if (!pdf) return;
       const newHighlights: Record<number, Highlight[]> = {};
-      let firstMatch: number | null = null;
 
-      for (let i = 1; i <= pdfRef.current.numPages; i++) {
-        const page = await pdfRef.current.getPage(i);
-        const content = await page.getTextContent();
-        // Replace multiple spaces/newlines yourself:
-        for (const item of content.items) {
-          if ("str" in item) {
-            item.str = item.str.replace(/\s+/g, " ");
-          }
-        }
-
+      for (let i = 1; i <= pdf.numPages; i++) {
+        if (loadId !== currentId) return;
+        const page = await pdf.getPage(i);
+        const text = await page.getTextContent();
         const matches: Highlight[] = [];
 
-        const HORIZONTAL_PADDING = 10; // in pixels
-        const VERTICAL_PADDING = 2; // in pixels
-
-        for (const item of content.items) {
+        for (const item of text.items) {
           if (
             "str" in item &&
             item.str.toLowerCase().includes(searchWord.toLowerCase())
           ) {
-            const transform = item.transform;
-            const totalWidth = item.width;
-            const height = item.height || 10;
-
-            const x = transform[4] - HORIZONTAL_PADDING;
-            const y = transform[5] - VERTICAL_PADDING;
-            const width = totalWidth + HORIZONTAL_PADDING * 2;
-            const adjustedHeight = height + VERTICAL_PADDING * 2;
-
-            matches.push({ x, y, width, height: adjustedHeight });
-
-            if (firstMatch === null) firstMatch = i;
+            matches.push({
+              x: item.transform[4],
+              y: item.transform[5],
+              width: item.width,
+              height: item.height || 10,
+            });
           }
         }
-
-        if (matches.length > 0) {
-          newHighlights[i] = matches;
-        }
+        if (matches.length > 0) newHighlights[i] = matches;
       }
 
-      setHighlights(newHighlights);
-
-      if (firstMatch !== null) {
-        setCurrentPage(firstMatch);
-        setScrollToPage(firstMatch);
-      }
+      if (loadId === currentId) setHighlights(newHighlights);
     };
 
     findWord();
-  }, [searchWord, numPages]);
+  }, [searchWord, numPages, loadId]);
 
   return (
     <div className="flex flex-col w-full h-screen bg-black text-white">
@@ -102,21 +87,24 @@ export default function PdfViewerInner({ file, searchWord }: PdfViewerProps) {
         ref={containerRef}
         className="flex-1 overflow-y-auto overflow-x-hidden p-4"
       >
-        <Document
-          file={file}
-          onLoadSuccess={onDocumentLoadSuccess}
-          className="flex flex-col items-center gap-4"
-        >
-          {Array.from({ length: numPages }, (_, index) => (
-            <PageWrapper
-              key={index}
-              pageNumber={index + 1}
-              pageWidth={pageWidth}
-              scrollTo={scrollToPage === index + 1}
-              highlights={highlights[index + 1] || []}
-            />
-          ))}
-        </Document>
+        {file && (
+          <Document
+            key={`${typeof file === "string" ? file : file.name}-${loadId}`}
+            file={file}
+            onLoadSuccess={onDocumentLoadSuccess}
+            className="flex flex-col items-center gap-4"
+          >
+            {Array.from({ length: numPages }, (_, index) => (
+              <PageWrapper
+                key={index}
+                pageNumber={index + 1}
+                pageWidth={pageWidth}
+                scrollTo={scrollToPage === index + 1}
+                highlights={highlights[index + 1] || []}
+              />
+            ))}
+          </Document>
+        )}
       </div>
 
       {numPages > 0 && (

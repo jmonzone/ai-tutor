@@ -41,6 +41,7 @@ export const ConversationProvider = ({ children }: { children: ReactNode }) => {
       });
       const conversations: Conversation[] = data.conversations || [];
 
+      console.log(conversations);
       setConversations(conversations);
     } catch (err) {
       console.error("Failed to fetch conversations:", err);

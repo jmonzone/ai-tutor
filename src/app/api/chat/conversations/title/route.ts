@@ -2,6 +2,7 @@ import { openai } from "@/lib/openai";
 import { Conversation } from "@/models/Conversation";
 import { NextRequest, NextResponse } from "next/server";
 import { getUserAndConnect } from "@/lib/mongodb";
+import { Message } from "@/types/message";
 
 export async function POST(req: NextRequest) {
   const userId = await getUserAndConnect(req);
@@ -11,7 +12,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Missing parameters" }, { status: 400 });
   }
 
-  const titlePrompt = `Suggest a concise conversation title for: "${conversation.messages}"`;
+  const textContent = conversation.messages
+    .map((m: Message) => m.content)
+    .join(" ");
+
+  console.log("compressing messages ", conversation.messages, textContent);
+
+  const titlePrompt = `Suggest a concise conversation title for: "${textContent}"`;
   const titleCompletion = await openai.chat.completions.create({
     model: "gpt-4o-mini",
     messages: [{ role: "user", content: titlePrompt }],
