@@ -3,13 +3,13 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Page } from "react-pdf";
 import "react-pdf/dist/Page/TextLayer.css";
-import "react-pdf/dist/Page/AnnotationLayer.css";
 import type { PageViewport } from "pdfjs-dist/types/src/display/display_utils";
 import type { Highlight } from "@/types/highlight";
 
 interface PageWrapperProps {
   pageNumber: number;
   pageWidth: number;
+  pageHeight: number;
   scrollTo?: boolean;
   highlights?: Highlight[];
 }
@@ -17,6 +17,7 @@ interface PageWrapperProps {
 export default function PageWrapper({
   pageNumber,
   pageWidth,
+  pageHeight,
   scrollTo,
   highlights = [],
 }: PageWrapperProps) {
@@ -25,9 +26,8 @@ export default function PageWrapper({
   const pageRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (loaded && scrollTo && pageRef.current) {
+    if (loaded && scrollTo && pageRef.current)
       pageRef.current.scrollIntoView({ behavior: "smooth" });
-    }
   }, [loaded, scrollTo]);
 
   return (
@@ -46,25 +46,22 @@ export default function PageWrapper({
         renderAnnotationLayer={false}
         className="bg-black"
         onRenderSuccess={(page) => {
-          const scale = pageWidth / page.view[2]; // PDF page width in points
+          const scale = pageWidth / page.view[2];
           const vp = page.getViewport({ scale });
           setViewport(vp);
           setLoaded(true);
         }}
       />
 
-      {/* Render highlights */}
       {loaded &&
         viewport &&
         highlights.map((hl, idx) => {
-          // Convert PDF coords to viewport coords
           const [x1, y1, x2, y2] = viewport.convertToViewportRectangle([
             hl.x,
             hl.y,
             hl.x + hl.width,
             hl.y + hl.height,
           ]);
-
           const left = Math.min(x1, x2);
           const top = Math.min(y1, y2);
           const width = Math.abs(x2 - x1);

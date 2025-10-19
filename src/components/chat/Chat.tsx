@@ -7,11 +7,7 @@ import { Message } from "@/types/message";
 import { useUser } from "@/context/UserContext";
 import { useConversations } from "@/context/ConversationProvider";
 
-interface ChatProps {
-  onSearchWordChange: (word: string) => void;
-}
-
-export default function Chat({ onSearchWordChange }: ChatProps) {
+export default function Chat() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -25,14 +21,22 @@ export default function Chat({ onSearchWordChange }: ChatProps) {
   useEffect(() => {
     if (conversation) {
       setMessages(conversation.messages);
-      setLoading(false);
     } else {
       setMessages([]);
     }
   }, [conversation]);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView();
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
+  useEffect(() => {
+    if (messages.length > 0) {
+      const last = messages[messages.length - 1];
+      if (last.role === "assistant") {
+        setLoading(false);
+      }
+    }
   }, [messages]);
 
   const sendMessageWrapper = (message: Message) => {
@@ -44,8 +48,7 @@ export default function Chat({ onSearchWordChange }: ChatProps) {
   };
 
   const handleSendMessage = () => {
-    if (!input.trim()) return;
-    if (!conversation) return;
+    if (!input.trim() || !conversation) return;
 
     const newMessage = {
       userId: user.id,
@@ -55,20 +58,17 @@ export default function Chat({ onSearchWordChange }: ChatProps) {
     };
 
     sendMessageWrapper(newMessage);
-    onSearchWordChange(input);
   };
 
   const handleVoiceRecord = async (audioBlob: Blob, transcript: string) => {
     const audioUrl = URL.createObjectURL(audioBlob);
     const trimmedTranscript = transcript?.trim();
 
-    console.log("handleVoiceRecord", trimmedTranscript);
-
     new Audio(audioUrl).play();
 
     const newMessage: Message = {
       userId: user.id,
-      conversationId: conversation.id,
+      conversationId: conversation?.id || "",
       role: "user",
       content: trimmedTranscript || "🎤 Voice memo sent.",
       voiceUrl: audioUrl,
@@ -78,7 +78,6 @@ export default function Chat({ onSearchWordChange }: ChatProps) {
   };
 
   const handleDictate = (text: string) => {
-    console.log("handleDictate", text);
     setInput(text);
   };
 
@@ -94,6 +93,18 @@ export default function Chat({ onSearchWordChange }: ChatProps) {
           .map((m, i) => (
             <ChatMessage key={i} message={m} />
           ))}
+
+        {loading && (
+          <div className="flex items-center space-x-2 mt-2 text-gray-500 text-sm">
+            <span>Thinking</span>
+            <div className="flex space-x-1">
+              <span className="animate-bounce [animation-delay:-0.3s]">.</span>
+              <span className="animate-bounce [animation-delay:-0.15s]">.</span>
+              <span className="animate-bounce">.</span>
+            </div>
+          </div>
+        )}
+
         <div ref={messagesEndRef} />
       </div>
       <ChatInput

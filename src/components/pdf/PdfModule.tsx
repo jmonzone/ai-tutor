@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef } from "react";
 import FileDrop from "../ui/Filedrop";
 import { useUser } from "@/context/UserContext";
 import { fetchWithAuth } from "@/lib/auth";
@@ -10,13 +10,10 @@ import { useConversations } from "@/context/ConversationProvider";
 import { Conversation } from "@/types/conversation";
 
 export default function PdfModule() {
-  const [searchWord, setSearchWord] = useState("");
-
   const { user } = useUser();
 
-  const { conversation, createNewConversation, setFileText } =
+  const { conversation, createNewConversation, fileLoaded, file, setFile } =
     useConversations();
-  const [file, setFile] = useState<File | null>(null);
   const lastConversationId = useRef<string | null>(null); // useRef avoids re-renders
 
   const onFileUploaded = async (targetFile: File) => {
@@ -77,17 +74,25 @@ export default function PdfModule() {
       <FileDrop onFileUploaded={onFileUploaded} />
     </div>
   ) : (
-    <div className="flex flex-col-reverse md:flex-row flex-1 overflow-hidden">
+    <div className="flex flex-col-reverse md:flex-row flex-1 overflow-hidden relative">
       <div className="w-full md:w-1/2 flex-1 min-h-0 overflow-auto md:border-r border-gray-300">
-        <Chat onSearchWordChange={setSearchWord} />
+        <Chat />
       </div>
-      <div className="w-full md:w-1/2 flex-1 min-h-0 overflow-auto">
-        <PdfViewer
-          file={file}
-          searchWord={searchWord}
-          onTextLoaded={setFileText}
-        />
+
+      <div className="relative w-full md:w-1/2 flex-1 min-h-0 overflow-auto">
+        <PdfViewer file={file} />
       </div>
+
+      {!fileLoaded && (
+        <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/80 backdrop-blur-md text-white pointer-events-auto">
+          {/* Spinner */}
+          <div className="w-12 h-12 border-4 border-white/30 border-t-white rounded-full animate-spin mb-4"></div>
+
+          <span className="text-lg tracking-wide animate-pulse">
+            Loading PDF…
+          </span>
+        </div>
+      )}
     </div>
   );
 }

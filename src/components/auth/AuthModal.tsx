@@ -7,9 +7,15 @@ interface AuthModalProps {
   mode: "login" | "signup";
   isOpen: boolean;
   onClose: () => void;
+  onToggleMode: () => void;
 }
 
-export default function AuthModal({ mode, isOpen, onClose }: AuthModalProps) {
+export default function AuthModal({
+  mode,
+  isOpen,
+  onClose,
+  onToggleMode,
+}: AuthModalProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -18,11 +24,9 @@ export default function AuthModal({ mode, isOpen, onClose }: AuthModalProps) {
 
   if (!isOpen) return null;
 
-  //todo: append logic to useUser
   const handleSubmit = async () => {
     setLoading(true);
     const endpoint = `/api/auth/${mode}`;
-    console.log(endpoint);
     try {
       const res = await fetch(endpoint, {
         method: "POST",
@@ -48,26 +52,26 @@ export default function AuthModal({ mode, isOpen, onClose }: AuthModalProps) {
 
   return (
     <div className="fixed inset-0 flex items-center justify-center z-50">
-      <div className="absolute inset-0 bg-black/75" onClick={onClose} />
+      <div className="absolute inset-0 bg-black/75" />
 
       <div className="relative z-10 w-80 bg-white text-black rounded-lg shadow-xl">
         <div className="p-6 flex flex-col">
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-bold">
+            <h2 className="text-xl font-bold capitalize">
               {mode === "login" ? "Login" : "Sign Up"}
             </h2>
-            <button
+            {/* <button
               onClick={onClose}
               className="text-gray-500 hover:text-gray-800 font-bold text-lg"
               aria-label="Close modal"
             >
               &times;
-            </button>
+            </button> */}
           </div>
 
           <input
             type="email"
-            placeholder="Username"
+            placeholder="Email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             className="w-full border border-gray-300 rounded px-3 py-2 mb-3 text-black"
@@ -87,6 +91,30 @@ export default function AuthModal({ mode, isOpen, onClose }: AuthModalProps) {
           >
             {loading ? "Processing..." : mode === "login" ? "Login" : "Sign Up"}
           </button>
+
+          <div className="mt-4 text-center text-sm text-gray-600">
+            {mode === "login" ? (
+              <>
+                No account?{" "}
+                <button
+                  onClick={onToggleMode}
+                  className="text-blue-600 hover:underline"
+                >
+                  Sign up
+                </button>
+              </>
+            ) : (
+              <>
+                Already registered?{" "}
+                <button
+                  onClick={onToggleMode}
+                  className="text-blue-600 hover:underline"
+                >
+                  Log in
+                </button>
+              </>
+            )}
+          </div>
         </div>
       </div>
     </div>

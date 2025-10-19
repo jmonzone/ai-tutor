@@ -7,7 +7,7 @@ export default function Navigation() {
     conversation,
     conversations,
     selectConversation,
-    createNewConversation,
+    startNewConversation,
   } = useConversations();
 
   return (
@@ -17,7 +17,7 @@ export default function Navigation() {
       </div>
 
       <button
-        onClick={() => createNewConversation()}
+        onClick={() => startNewConversation()}
         className="flex items-center gap-2 p-3 m-3 bg-gray-800 hover:bg-gray-700 rounded-xl"
       >
         Upload PDF

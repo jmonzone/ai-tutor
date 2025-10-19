@@ -6,54 +6,53 @@ import type { PDFDocumentProxy } from "pdfjs-dist";
 import PageWrapper from "./PageWrapper";
 import type { Highlight } from "@/types/highlight";
 import { PdfViewerProps } from "./PdfViewer";
+import { useConversations } from "@/context/ConversationProvider";
 
 pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
 
-export default function PdfViewerInner({
-  file,
-  searchWord,
-  onTextLoaded,
-}: PdfViewerProps) {
+export default function PdfViewerInner({ file }: PdfViewerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const pdfRef = useRef<PDFDocumentProxy | null>(null);
 
   const [numPages, setNumPages] = useState(0);
   const [pageWidth, setPageWidth] = useState(0);
+  const [pageHeight, setPageHeight] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [scrollToPage, setScrollToPage] = useState<number | null>(null);
   const [highlights, setHighlights] = useState<Record<number, Highlight[]>>({});
   const [loadId, setLoadId] = useState(0);
 
+  const { searchWord, page, setPages } = useConversations();
+
   useEffect(() => {
-    const updateWidth = () => {
+    const onResize = () => {
       if (containerRef.current) {
         setPageWidth(containerRef.current.clientWidth - 32);
+        setPageHeight(containerRef.current.clientHeight - 32);
       }
     };
-    updateWidth();
-    window.addEventListener("resize", updateWidth);
-    return () => window.removeEventListener("resize", updateWidth);
+    onResize();
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
   }, []);
 
   const onDocumentLoadSuccess = async (pdf: PDFDocumentProxy) => {
     pdfRef.current = pdf;
     setNumPages(pdf.numPages);
 
-    let fullText = "";
+    const pageTexts: string[] = [];
 
     for (let i = 1; i <= pdf.numPages; i++) {
-      const page = await pdf.getPage(i);
-      const content = await page.getTextContent();
+      const pg = await pdf.getPage(i);
+      const content = await pg.getTextContent();
 
       const pageText = content.items
         .map((item) => (item as TextItem).str)
         .join(" ");
-
-      fullText += pageText + "\n\n";
+      pageTexts.push(pageText);
     }
 
-    console.log("Full PDF Text:", fullText);
-    onTextLoaded(fullText);
+    setPages(pageTexts);
   };
 
   useEffect(() => {
@@ -65,49 +64,65 @@ export default function PdfViewerInner({
   }, [file]);
 
   useEffect(() => {
-    if (!searchWord || !pdfRef.current) return;
+    if (page) setCurrentPage(page);
+  }, [page]);
+
+  useEffect(() => {
+    setScrollToPage(currentPage);
+  }, [currentPage]);
+
+  useEffect(() => {
+    if (!searchWord || !pdfRef.current || !page) return;
     const currentId = loadId;
 
-    const findWord = async () => {
+    const findWordOnPage = async () => {
       const pdf = pdfRef.current;
       if (!pdf) return;
       const newHighlights: Record<number, Highlight[]> = {};
 
-      for (let i = 1; i <= pdf.numPages; i++) {
-        if (loadId !== currentId) return;
-        const page = await pdf.getPage(i);
-        const text = await page.getTextContent();
-        const matches: Highlight[] = [];
+      const highlightPage = await pdf.getPage(page);
+      const textContent = await highlightPage.getTextContent();
+      const searchNormalized = searchWord
+        .replace(/-\n/g, "")
+        .replace(/\s+/g, " ")
+        .toLowerCase();
 
-        for (const item of text.items) {
-          if (
-            "str" in item &&
-            item.str.toLowerCase().includes(searchWord.toLowerCase())
-          ) {
-            matches.push({
-              x: item.transform[4],
-              y: item.transform[5],
-              width: item.width,
-              height: item.height || 10,
-            });
-          }
+      const matches: Highlight[] = [];
+
+      for (const item of textContent.items) {
+        if (!("str" in item)) continue;
+
+        const str = (item as any).str.replace(/-\n/g, "").trim().toLowerCase();
+        if (!str) continue;
+
+        // skip single words
+        if (str.split(/\s+/).length === 1) continue;
+
+        if (searchNormalized.includes(str)) {
+          const tx = (item as any).transform;
+          matches.push({
+            x: tx[4],
+            y: tx[5],
+            width: item.width + 10,
+            height: ((item as any).height || 10) + 10,
+          });
         }
-        if (matches.length > 0) newHighlights[i] = matches;
       }
 
+      if (matches.length > 0) newHighlights[page] = matches;
       if (loadId === currentId) setHighlights(newHighlights);
     };
 
-    findWord();
-  }, [searchWord, numPages, loadId]);
+    findWordOnPage();
+  }, [searchWord, page, loadId]);
 
   return (
-    <div className="flex flex-col w-full h-screen bg-black text-white">
+    <div className="flex flex-col w-full h-full bg-black text-white">
       <div
         ref={containerRef}
         className="flex-1 overflow-y-auto overflow-x-hidden p-4"
       >
-        {file && (
+        {file && containerRef.current && (
           <Document
             key={`${typeof file === "string" ? file : file.name}-${loadId}`}
             file={file}
@@ -119,6 +134,7 @@ export default function PdfViewerInner({
                 key={index}
                 pageNumber={index + 1}
                 pageWidth={pageWidth}
+                pageHeight={pageHeight}
                 scrollTo={scrollToPage === index + 1}
                 highlights={highlights[index + 1] || []}
               />
@@ -127,7 +143,7 @@ export default function PdfViewerInner({
         )}
       </div>
 
-      {numPages > 0 && (
+      {numPages > 1 && (
         <div className="flex items-center justify-center gap-4 p-4 bg-gray-900 text-white">
           <button
             onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}

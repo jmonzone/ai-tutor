@@ -6,10 +6,16 @@ import { useUser } from "@/context/UserContext"; // adjust path if needed
 import { guest } from "@/types/user";
 
 export default function Header() {
-  const [modalMode, setModalMode] = useState<"login" | "signup" | null>(null);
+  const [modalMode, setModalMode] = useState<"login" | "signup" | null>(
+    "login"
+  );
   const [mounted, setMounted] = useState(false);
 
   const { user, setUser } = useUser();
+
+  useEffect(() => {
+    setModalMode(user.role == "guest" ? "login" : null);
+  }, [user]);
 
   useEffect(() => {
     const validateSession = async () => {
@@ -63,21 +69,15 @@ export default function Header() {
 
   return (
     <header className="w-full bg-black shadow-sm border-b border-gray-200 flex justify-end items-center h-14 px-6">
-      {user.role == "guest" ? (
-        <>
-          <button
-            className="mr-2 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition"
-            onClick={() => setModalMode("login")}
-          >
-            Login
-          </button>
-          <button
-            className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 transition"
-            onClick={() => setModalMode("signup")}
-          >
-            Sign Up
-          </button>
-        </>
+      {user.role == "guest" && modalMode ? (
+        <AuthModal
+          mode={modalMode}
+          isOpen={!!modalMode}
+          onClose={() => setModalMode(null)}
+          onToggleMode={() =>
+            setModalMode(modalMode === "login" ? "signup" : "login")
+          }
+        />
       ) : (
         <>
           <span className="text-white mr-4">Welcome, {user.email}</span>
@@ -90,13 +90,13 @@ export default function Header() {
         </>
       )}
 
-      {modalMode && (
+      {/* {modalMode && (
         <AuthModal
           mode={modalMode}
           isOpen={!!modalMode}
           onClose={() => setModalMode(null)}
         />
-      )}
+      )} */}
     </header>
   );
 }

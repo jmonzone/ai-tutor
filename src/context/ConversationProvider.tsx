@@ -16,10 +16,16 @@ import { FileMetadata } from "@/types/fileMetadata";
 interface ConversationContextValue {
   conversation: Conversation | null;
   conversations: Conversation[];
+  startNewConversation: () => void;
   createNewConversation: (file: FileMetadata) => Promise<Conversation | null>;
   selectConversation: (conversation: Conversation) => void;
   sendMessage: (message: Message) => void;
-  setFileText: (text: string) => void;
+  searchWord: string;
+  page: number | null;
+  fileLoaded: boolean;
+  file: File | null;
+  setFile: (file: File) => void;
+  setPages: (pages: string[]) => void;
 }
 
 const ConvseationContext = createContext<ConversationContextValue | undefined>(
@@ -30,12 +36,20 @@ export const ConversationProvider = ({ children }: { children: ReactNode }) => {
   const [conversation, setConversation] = useState<Conversation | null>(null);
   const [conversations, setConversations] = useState<Conversation[]>([]);
 
-  const [fileText, setFileText] = useState<string>("");
+  const [searchWord, setSearchWord] = useState<string>("");
+
+  const [file, setFile] = useState<File | null>(null);
+  const [page, setPage] = useState<number | null>(-1);
+  const [pages, setPages] = useState<string[]>([]);
 
   const { user } = useUser();
 
   useEffect(() => {
-    fetchConversations();
+    if (user.role == "student") fetchConversations();
+    else {
+      setConversation(null);
+      setConversations([]);
+    }
   }, [user]);
 
   const fetchConversations = async () => {
@@ -58,7 +72,7 @@ export const ConversationProvider = ({ children }: { children: ReactNode }) => {
     const convToUpdate = {
       ...conversation,
       messages: [...(conversation.messages || []), newMessage],
-      fileText,
+      pages,
     };
 
     setConversation(convToUpdate);
@@ -68,14 +82,13 @@ export const ConversationProvider = ({ children }: { children: ReactNode }) => {
         : [...prevConvs, convToUpdate]
     );
 
-    updateTitle(convToUpdate);
     fetchAIResponse(convToUpdate);
   };
 
-  const updateTitle = async (conversation: Conversation) => {
+  const updateTitle = async (conversation: Conversation, pages: string[]) => {
     const data = await fetchWithAuth("/api/chat/conversations/title", {
       method: "POST",
-      body: JSON.stringify({ conversation }),
+      body: JSON.stringify({ conversation, pages }),
     });
 
     if (data.title) {
@@ -95,9 +108,7 @@ export const ConversationProvider = ({ children }: { children: ReactNode }) => {
       const data = await fetchWithAuth("/api/chat/send", {
         method: "POST",
         body: JSON.stringify({
-          conversationId: conversation.id,
-          messages: conversation.messages,
-          fileText: conversation.fileText,
+          conversation,
         }),
       });
 
@@ -110,6 +121,12 @@ export const ConversationProvider = ({ children }: { children: ReactNode }) => {
         voiceUrl: data.reply.voiceBase64,
         conversationId: conversation.id,
       };
+
+      console.log("fetchAIResponse complete", data);
+
+      setSearchWord(data.quote[0]);
+
+      setPage(data.page);
 
       setConversation((prev) =>
         prev ? { ...prev, messages: [...prev.messages, assistantMsg] } : prev
@@ -158,15 +175,41 @@ export const ConversationProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const selectConversation = (conversation: Conversation) => {
+    setConversation(conversation);
+    setPage(null);
+    setPages([]);
+    setFile(null);
+  };
+
+  const handleSetPages = (pages: string[]) => {
+    console.log("setting pages", pages.length);
+    if (conversation) updateTitle(conversation, pages);
+
+    setPages(pages);
+  };
+
+  const startNewConversation = () => {
+    setConversation(null);
+    setPage(null);
+    setPages([]);
+    setFile(null);
+  };
   return (
     <ConvseationContext.Provider
       value={{
         conversation,
         conversations,
+        startNewConversation,
         createNewConversation,
-        selectConversation: setConversation,
+        selectConversation,
         sendMessage,
-        setFileText,
+        searchWord,
+        page,
+        fileLoaded: pages.length > 0,
+        file,
+        setFile,
+        setPages: handleSetPages,
       }}
     >
       {children}
