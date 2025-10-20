@@ -27,8 +27,8 @@ export default function PdfViewerInner({ file }: PdfViewerProps) {
   useEffect(() => {
     const onResize = () => {
       if (containerRef.current) {
-        setPageWidth(containerRef.current.clientWidth - 32);
-        setPageHeight(containerRef.current.clientHeight - 32);
+        setPageWidth(containerRef.current.clientWidth);
+        // setPageHeight(containerRef.current.clientHeight - 32);
       }
     };
     onResize();
@@ -75,6 +75,31 @@ export default function PdfViewerInner({ file }: PdfViewerProps) {
     if (!searchWord || !pdfRef.current || !page) return;
     const currentId = loadId;
 
+    const normalize = (s: string) =>
+      s
+        .replace(/-\n/g, "") // join hyphenated linebreaks
+        .replace(/[^\p{L}\p{N}\s]/gu, " ") // remove punctuation (unicode-safe)
+        .replace(/\s+/g, " ") // collapse whitespace
+        .trim()
+        .toLowerCase();
+
+    const hasContiguousWordSeq = (
+      haystack: string,
+      needle: string,
+      minWords = 3
+    ) => {
+      const needleWords = needle.split(" ").filter(Boolean);
+      if (needleWords.length < minWords) return false;
+
+      for (let len = needleWords.length; len >= minWords; len--) {
+        for (let start = 0; start + len <= needleWords.length; start++) {
+          const seq = needleWords.slice(start, start + len).join(" ");
+          if (haystack.includes(seq)) return true;
+        }
+      }
+      return false;
+    };
+
     const findWordOnPage = async () => {
       const pdf = pdfRef.current;
       if (!pdf) return;
@@ -82,30 +107,43 @@ export default function PdfViewerInner({ file }: PdfViewerProps) {
 
       const highlightPage = await pdf.getPage(page);
       const textContent = await highlightPage.getTextContent();
-      const searchNormalized = searchWord
-        .replace(/-\n/g, "")
-        .replace(/\s+/g, " ")
-        .toLowerCase();
+      const items = textContent.items.filter((it) => "str" in it) as any[];
+
+      const searchNormalized = normalize(searchWord);
+      console.log("searchNormalized:", searchNormalized);
 
       const matches: Highlight[] = [];
 
-      for (const item of textContent.items) {
-        if (!("str" in item)) continue;
+      for (const item of items) {
+        const raw = (item as any).str;
+        if (!raw) continue;
 
-        const str = (item as any).str.replace(/-\n/g, "").trim().toLowerCase();
-        if (!str) continue;
+        const itemNorm = normalize(raw);
+        if (!itemNorm) continue;
 
-        // skip single words
-        if (str.split(/\s+/).length === 1) continue;
+        if (itemNorm.split(" ").length === 1) continue;
 
-        if (searchNormalized.includes(str)) {
-          const tx = (item as any).transform;
+        const directMatch =
+          itemNorm.includes(searchNormalized) ||
+          searchNormalized.includes(itemNorm);
+
+        const seqMatch =
+          hasContiguousWordSeq(searchNormalized, itemNorm, 3) ||
+          hasContiguousWordSeq(itemNorm, searchNormalized, 3);
+
+        if (directMatch || seqMatch) {
+          const tx = item.transform;
+
+          console.log("match", item);
           matches.push({
             x: tx[4],
             y: tx[5],
-            width: item.width + 10,
-            height: ((item as any).height || 10) + 10,
+            width: item.width,
+            height: item.height,
           });
+          // console.log("MATCH item:", { raw, itemNorm, directMatch, seqMatch });
+        } else {
+          // console.log("no match:", { raw, itemNorm });
         }
       }
 

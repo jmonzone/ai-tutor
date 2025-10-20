@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
     const { id, messages, pages } = conversation;
     const latestUserMessage = messages[messages.length - 1];
 
-    const threshold = 0.5;
+    const threshold = 0.3;
 
     const cosineSimilarity = (a: number[], b: number[]) => {
       const dot = a.reduce((sum, val, i) => sum + val * b[i], 0);
@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
 
     console.log("calculating page embeddings");
     const pageEmbeddings = await Promise.all(
-      pages.map((text) =>
+      pages.map((text: string) =>
         openai.embeddings
           .create({ model: "text-embedding-3-small", input: text })
           .then((res) => res.data[0].embedding as number[])
@@ -46,10 +46,22 @@ export async function POST(req: NextRequest) {
       })
     ).data[0].embedding as number[];
 
-    const scoredPages = pageEmbeddings.map((emb, i) => ({
-      index: i,
-      sim: cosineSimilarity(emb, questionEmbedding),
-    }));
+    const MIN_LENGTH = 10;
+    const LENGTH_PENALTY = 0.1;
+
+    const scoredPages = pageEmbeddings
+      .map((emb, i) => {
+        const similarity = cosineSimilarity(emb, questionEmbedding);
+        const length = pages[i].length;
+        const penalty = length < MIN_LENGTH ? LENGTH_PENALTY : 1.0;
+        return {
+          index: i,
+          sim: similarity * penalty,
+        };
+      })
+      .sort((a, b) => b.sim - a.sim);
+
+    console.log(scoredPages);
 
     const relevantPages = scoredPages
       .filter((p) => p.sim >= threshold)
@@ -69,10 +81,6 @@ export async function POST(req: NextRequest) {
           }));
 
     const topPage = pagesToUse[0];
-
-    const fullText = pagesToUse
-      .map((p) => `--- Page ${p.page} ---\n${p.text}`)
-      .join("\n\n");
 
     const systemPrompt = `
 You are an assistant helping the user understand a PDF document.
@@ -128,7 +136,7 @@ ${quote}
         { role: "system", content: summarizePrompt },
         latestUserMessage,
       ],
-      temperature: 0,
+      temperature: 0.5,
     });
 
     const summary = summaryResponse.choices[0].message?.content || "";

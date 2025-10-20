@@ -69,6 +69,8 @@ export const ConversationProvider = ({ children }: { children: ReactNode }) => {
   const sendMessage = async (newMessage: Message) => {
     if (!conversation) return;
 
+    setSearchWord("");
+
     const convToUpdate = {
       ...conversation,
       messages: [...(conversation.messages || []), newMessage],
