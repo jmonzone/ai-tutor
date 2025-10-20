@@ -6,7 +6,7 @@ import { useUser } from "@/context/UserContext";
 import { fetchWithAuth } from "@/lib/auth";
 import Chat from "../chat/Chat";
 import PdfViewer from "./PdfViewer";
-import { useConversations } from "@/context/ConversationProvider";
+import { useConversations } from "@/context/ConversationContext";
 import { Conversation } from "@/types/conversation";
 
 export default function PdfModule() {

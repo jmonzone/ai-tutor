@@ -1,6 +1,6 @@
 "use client";
 
-import { useConversations } from "@/context/ConversationProvider";
+import { useConversations } from "@/context/ConversationContext";
 
 export default function Navigation() {
   const {

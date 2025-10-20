@@ -6,7 +6,7 @@ import type { PDFDocumentProxy } from "pdfjs-dist";
 import PageWrapper from "./PageWrapper";
 import type { Highlight } from "@/types/highlight";
 import { PdfViewerProps } from "./PdfViewer";
-import { useConversations } from "@/context/ConversationProvider";
+import { useConversations } from "@/context/ConversationContext";
 
 pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
 
@@ -134,7 +134,6 @@ export default function PdfViewerInner({ file }: PdfViewerProps) {
         if (directMatch || seqMatch) {
           const tx = item.transform;
 
-          console.log("match", item);
           matches.push({
             x: tx[4],
             y: tx[5],

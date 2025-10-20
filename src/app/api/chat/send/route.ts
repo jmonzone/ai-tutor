@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
     const { id, messages, pages } = conversation;
     const latestUserMessage = messages[messages.length - 1];
 
-    const threshold = 0.3;
+    const threshold = 0.2;
 
     const cosineSimilarity = (a: number[], b: number[]) => {
       const dot = a.reduce((sum, val, i) => sum + val * b[i], 0);
@@ -46,8 +46,8 @@ export async function POST(req: NextRequest) {
       })
     ).data[0].embedding as number[];
 
-    const MIN_LENGTH = 10;
-    const LENGTH_PENALTY = 0.1;
+    const MIN_LENGTH = 5;
+    const LENGTH_PENALTY = 0.5;
 
     const scoredPages = pageEmbeddings
       .map((emb, i) => {
@@ -141,13 +141,6 @@ ${quote}
 
     const summary = summaryResponse.choices[0].message?.content || "";
 
-    const tts = await openai.audio.speech.create({
-      model: "gpt-4o-mini-tts",
-      voice: "alloy",
-      input: summary,
-    });
-    const audioBase64 = Buffer.from(await tts.arrayBuffer()).toString("base64");
-
     const assistantContent = JSON.stringify(
       { page: topPage.page, similarity: topPage.similarity, quote, summary },
       null,
@@ -156,12 +149,19 @@ ${quote}
 
     console.log("Assistant content:", assistantContent);
 
+    const tts = await openai.audio.speech.create({
+      model: "gpt-4o-mini-tts",
+      voice: "alloy",
+      input: summary,
+    });
+    const audioBase64 = Buffer.from(await tts.arrayBuffer()).toString("base64");
+
     const assistantMessage = {
       userId,
       conversationId: id,
       role: "assistant",
-      content: assistantContent,
-      voiceBase64: audioBase64,
+      content: summary,
+      vpoce: audioBase64,
     };
 
     if (userId && id) {

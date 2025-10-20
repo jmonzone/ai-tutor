@@ -115,6 +115,7 @@ export const ConversationProvider = ({ children }: { children: ReactNode }) => {
       });
 
       if (!data?.reply) return null;
+      console.log(data.reply);
 
       const assistantMsg: Message = {
         userId: user.id,
@@ -133,6 +134,7 @@ export const ConversationProvider = ({ children }: { children: ReactNode }) => {
       setConversation((prev) =>
         prev ? { ...prev, messages: [...prev.messages, assistantMsg] } : prev
       );
+
       setConversations((prev) =>
         prev.map((c) =>
           c.id === conversation.id

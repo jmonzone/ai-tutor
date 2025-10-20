@@ -53,7 +53,6 @@ export default function PageWrapper({
           onRenderSuccess={(page) => {
             const scale = pageWidth / page.view[2];
             const vp = page.getViewport({ scale });
-            console.log("page", vp);
 
             setViewport(vp);
             setLoaded(true);

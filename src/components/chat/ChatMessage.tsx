@@ -1,13 +1,8 @@
 // ChatMessage.tsx
 "use client";
 
+import { Message } from "@/types/message";
 import React from "react";
-
-export interface Message {
-  role: "system" | "user" | "assistant";
-  content: string;
-  voiceUrl?: string; // optional voice file URL
-}
 
 interface ChatMessageProps {
   message: Message;
@@ -16,7 +11,7 @@ interface ChatMessageProps {
 export default function ChatMessage({ message }: ChatMessageProps) {
   const playVoice = () => {
     if (message.voiceUrl) {
-      const audio = new Audio(message.voiceUrl);
+      const audio = new Audio(`data:audio/mp3;base64,${message.voiceUrl}`);
       audio.play();
     }
   };

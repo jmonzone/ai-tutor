@@ -5,7 +5,7 @@ import ChatMessage from "./ChatMessage";
 import ChatInput from "./ChatInput";
 import { Message } from "@/types/message";
 import { useUser } from "@/context/UserContext";
-import { useConversations } from "@/context/ConversationProvider";
+import { useConversations } from "@/context/ConversationContext";
 
 export default function Chat() {
   const [messages, setMessages] = useState<Message[]>([]);
