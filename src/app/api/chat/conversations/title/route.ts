@@ -11,7 +11,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Missing parameters" }, { status: 400 });
   }
 
-  console.log("updating title");
+  console.log("updating title", conversation, pages);
   const condensedPages = pages
     .slice(0, 3)
     .map((p: string) => p.slice(0, 800))

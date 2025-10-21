@@ -88,6 +88,7 @@ export const ConversationProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const updateTitle = async (conversation: Conversation, pages: string[]) => {
+    console.log("updating title");
     const data = await fetchWithAuth("/api/chat/conversations/title", {
       method: "POST",
       body: JSON.stringify({ conversation, pages }),
@@ -183,15 +184,23 @@ export const ConversationProvider = ({ children }: { children: ReactNode }) => {
     setConversation(conversation);
     setPage(null);
     setPages([]);
-    setFile(null);
+    // setFile(null);
   };
 
   const handleSetPages = (pages: string[]) => {
-    console.log("setting pages", pages.length);
-    if (conversation) updateTitle(conversation, pages);
-
     setPages(pages);
   };
+
+  useEffect(() => {
+    console.log("conversation changed: ", pages, conversation);
+    if (
+      pages.length > 0 &&
+      conversation &&
+      conversation.title == "New Conversation"
+    ) {
+      updateTitle(conversation, pages);
+    }
+  }, [pages, conversation]);
 
   const startNewConversation = () => {
     setConversation(null);

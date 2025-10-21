@@ -116,27 +116,29 @@ ${topPage.text.slice(0, 120000)}
     // Convert quote into array of lines
     const quoteLines = quote
       .split(/\r?\n/) // split by newlines
-      .map((line) => line.trim()) // trim whitespace
-      .filter((line) => line.length > 0); // remove empty lines
+      .map((line: string) => line.trim()) // trim whitespace
+      .filter((line: string) => line.length > 0); // remove empty lines
 
     console.log("Quote lines:", quoteLines);
 
-    const summarizePrompt = `
-You are an AI assistant responding to a user's question using a quote from a document.
-Include page references like (page ${topPage.page}) and stay concise and factual.
-Do not include info from outside the document.
+    let summarizePrompt = `
+You are an AI assistant responding to a user's question and summarizing a quote from a document.
+If the quote is short, then ellaborate further. 
 
 Quote:
 ${quote}
+
+Document:
+${topPage.text.slice(0, 120000)}
 `;
+
+    if (pages.length > 1)
+      summarizePrompt += `Include page references like (page ${topPage.page}) and stay concise and factual.`;
 
     const summaryResponse = await openai.chat.completions.create({
       model: "gpt-4o-mini",
-      messages: [
-        { role: "system", content: summarizePrompt },
-        latestUserMessage,
-      ],
-      temperature: 0.5,
+      messages: [{ role: "system", content: summarizePrompt }, ...messages],
+      temperature: 0.75,
     });
 
     const summary = summaryResponse.choices[0].message?.content || "";

@@ -82,7 +82,7 @@ export default function Header() {
         <>
           <span className="text-white mr-4">Welcome, {user.email}</span>
           <button
-            className="px-4 py-2 bg-red-500 text-white rounded"
+            className="px-4 py-2 bg-red-500 text-white rounded cursor-pointer"
             onClick={handleLogout}
           >
             Log Out

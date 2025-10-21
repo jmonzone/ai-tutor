@@ -50,10 +50,10 @@ export default function Chat() {
   const handleSendMessage = () => {
     if (!input.trim() || !conversation) return;
 
-    const newMessage = {
+    const newMessage: Message = {
       userId: user.id,
       conversationId: conversation.id,
-      role: "user" as const,
+      role: "user",
       content: input,
     };
 
@@ -81,40 +81,70 @@ export default function Chat() {
     setInput(text);
   };
 
+  const isEmpty = messages.filter((m) => m.role !== "system").length === 0;
+
   return (
     <div className="flex flex-col h-full relative">
-      {/* Message list */}
-      <div
-        ref={messagesContainerRef}
-        className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-2 mb-20"
-      >
-        {messages
-          .filter((m) => m.role !== "system")
-          .map((m, i) => (
-            <ChatMessage key={i} message={m} />
-          ))}
-
-        {loading && (
-          <div className="flex items-center space-x-2 mt-2 text-gray-500 text-sm">
-            <span>Thinking</span>
-            <div className="flex space-x-1">
-              <span className="animate-bounce [animation-delay:-0.3s]">.</span>
-              <span className="animate-bounce [animation-delay:-0.15s]">.</span>
-              <span className="animate-bounce">.</span>
-            </div>
+      {/* Empty state */}
+      {isEmpty ? (
+        <div className="flex flex-col items-center justify-center h-full p-6 text-center space-y-4 text-gray-400">
+          <div className="text-lg font-semibold">
+            Welcome to AI Study Tutor!
           </div>
-        )}
+          <div className="text-sm">Ask a question about this pdf file.</div>
+          {/* Center input bar */}
+          <div className="w-full max-w-md mt-4">
+            <ChatInput
+              input={input}
+              setInput={setInput}
+              sendMessage={handleSendMessage}
+              loading={loading}
+              onVoiceRecord={handleVoiceRecord}
+              onDictate={handleDictate}
+            />
+          </div>
+        </div>
+      ) : (
+        <>
+          {/* Message list */}
+          <div
+            ref={messagesContainerRef}
+            className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-2 mb-20"
+          >
+            {messages
+              .filter((m) => m.role !== "system")
+              .map((m, i) => (
+                <ChatMessage key={i} message={m} />
+              ))}
 
-        <div ref={messagesEndRef} />
-      </div>
-      <ChatInput
-        input={input}
-        setInput={setInput}
-        sendMessage={handleSendMessage}
-        loading={loading}
-        onVoiceRecord={handleVoiceRecord}
-        onDictate={handleDictate}
-      />
+            {loading && (
+              <div className="flex items-center space-x-2 mt-2 text-gray-500 text-sm">
+                <span>Thinking</span>
+                <div className="flex space-x-1">
+                  <span className="animate-bounce [animation-delay:-0.3s]">
+                    .
+                  </span>
+                  <span className="animate-bounce [animation-delay:-0.15s]">
+                    .
+                  </span>
+                  <span className="animate-bounce">.</span>
+                </div>
+              </div>
+            )}
+
+            <div ref={messagesEndRef} />
+          </div>
+
+          <ChatInput
+            input={input}
+            setInput={setInput}
+            sendMessage={handleSendMessage}
+            loading={loading}
+            onVoiceRecord={handleVoiceRecord}
+            onDictate={handleDictate}
+          />
+        </>
+      )}
     </div>
   );
 }
