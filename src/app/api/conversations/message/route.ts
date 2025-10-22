@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
 
     const MIN_LENGTH = 50;
     const LENGTH_PENALTY = 0.5;
-    // const threshold = 0.2;
+    const RELEVENCE_THRESHOLD = 0.3;
 
     const scoredPages = pageEmbeddings
       .map((emb, i) => {
@@ -91,22 +91,29 @@ Respond ONLY in valid JSON like:
     console.log("Quote:", quote);
 
     let summarizePrompt = `
-You are an AI assistant responding to a user's prompts referencing a quote from an uploaded document.
-The answer must be very short and concise. Mention a shortened version of the quote ${quote} in quotation marks,
-then explain the quote in an easier to understand way
+You are an AI assistant responding to a user's prompts referencing a quote from an uploaded pdf.
 `;
 
-    if (pages.length > 1) {
-      summarizePrompt += `- Include a page reference (page ${topPage.index}) with the quote`;
+    const isRelevant = topPage.sim > RELEVENCE_THRESHOLD;
+    if (isRelevant) {
+      summarizePrompt += `mention a shortened version of the quote ${quote} in quotation marks,
+then explain the quote in an easier to understand way. The answer must be very short and concise.`;
+
+      if (pages.length > 1) {
+        summarizePrompt += `Include a page reference (page ${topPage.index}) with the quote`;
+      }
+    } else {
+      summarizePrompt += `However the pdf is not relevant to the user's questions.
+      Let them know that the uploaded pdf does not contain anything related.`;
     }
+
+    const N = 3;
+    const lastMessages = messages.slice(-N);
 
     const summaryResponse = await openai.chat.completions.create({
       model: "gpt-4o-mini",
-      messages: [
-        { role: "system", content: summarizePrompt },
-        latestUserMessage,
-      ],
-      // temperature: 0.5,
+      messages: [{ role: "system", content: summarizePrompt }, ...lastMessages],
+      temperature: 0.5,
     });
 
     const summary = summaryResponse.choices[0].message?.content || "";
@@ -155,6 +162,7 @@ then explain the quote in an easier to understand way
 
     return NextResponse.json({
       reply: assistantMessage,
+      isRelevant,
       page: assistantContent.page,
       quote: assistantContent.quote,
     });

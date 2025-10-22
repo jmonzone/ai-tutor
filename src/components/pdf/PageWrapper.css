@@ -1,0 +1,10 @@
+.bg-yellow-400\/40 {
+  mix-blend-mode: multiply;
+  border-radius: 2px;
+}
+
+@keyframes drawEllipse {
+  to {
+    stroke-dashoffset: 0;
+  }
+}

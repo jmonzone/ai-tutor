@@ -129,9 +129,10 @@ export const ConversationProvider = ({ children }: { children: ReactNode }) => {
 
       console.log("fetchAIResponse complete", data);
 
-      setSearchWord(data.quote);
-
-      setPage(data.page);
+      if (data.isRelevant) {
+        setSearchWord(data.quote);
+        setPage(data.page);
+      }
 
       setConversation((prev) =>
         prev ? { ...prev, messages: [...prev.messages, assistantMsg] } : prev
