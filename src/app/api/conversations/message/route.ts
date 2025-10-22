@@ -3,6 +3,7 @@ import { openai } from "@/lib/openai";
 import { getUserAndConnect } from "@/lib/mongodb";
 import { Conversation } from "@/models/Conversation";
 import { Message } from "@/models/Message";
+import { OpenAIMessage } from "@/types/message";
 
 export async function POST(req: NextRequest) {
   try {
@@ -17,7 +18,11 @@ export async function POST(req: NextRequest) {
     }
 
     const { id, messages, pages } = conversation;
-    const latestUserMessage = messages[messages.length - 1];
+
+    const recentMessages = messages.slice(-3);
+    const questionText = recentMessages
+      .map((msg: OpenAIMessage) => msg.content)
+      .join(" ");
 
     const cosineSimilarity = (a: number[], b: number[]) => {
       const dot = a.reduce((sum, val, i) => sum + val * b[i], 0);
@@ -39,7 +44,7 @@ export async function POST(req: NextRequest) {
     const questionEmbedding = (
       await openai.embeddings.create({
         model: "text-embedding-3-small",
-        input: latestUserMessage.content,
+        input: questionText,
       })
     ).data[0].embedding as number[];
 
@@ -80,7 +85,7 @@ Respond ONLY in valid JSON like:
 
     const relevance = await openai.chat.completions.create({
       model: "gpt-4o-mini",
-      messages: [{ role: "system", content: systemPrompt }, latestUserMessage],
+      messages: [{ role: "system", content: systemPrompt }, ...recentMessages],
       temperature: 0,
       response_format: { type: "json_object" },
     });
@@ -107,12 +112,12 @@ then explain the quote in an easier to understand way. The answer must be very s
       Let them know that the uploaded pdf does not contain anything related.`;
     }
 
-    const N = 3;
-    const lastMessages = messages.slice(-N);
-
     const summaryResponse = await openai.chat.completions.create({
       model: "gpt-4o-mini",
-      messages: [{ role: "system", content: summarizePrompt }, ...lastMessages],
+      messages: [
+        { role: "system", content: summarizePrompt },
+        ...recentMessages,
+      ],
       temperature: 0.5,
     });
 

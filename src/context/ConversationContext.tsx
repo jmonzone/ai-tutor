@@ -1,7 +1,7 @@
 "use client";
 
 import { fetchWithAuth } from "@/lib/auth";
-import { Conversation, defaultConversation } from "@/types/conversation";
+import { Conversation } from "@/types/conversation";
 import {
   createContext,
   useContext,
@@ -16,19 +16,19 @@ import { FileMetadata } from "@/types/fileMetadata";
 interface ConversationContextValue {
   conversation: Conversation | null;
   conversations: Conversation[];
+  fileLoaded: boolean;
+  file: File | null;
+  page: number | null;
+  searchWord: string;
   startNewConversation: () => void;
   createNewConversation: (file: FileMetadata) => Promise<Conversation | null>;
   selectConversation: (conversation: Conversation) => void;
   sendMessage: (message: Message) => void;
-  searchWord: string;
-  page: number | null;
-  fileLoaded: boolean;
-  file: File | null;
   setFile: (file: File) => void;
   setPages: (pages: string[]) => void;
 }
 
-const ConvseationContext = createContext<ConversationContextValue | undefined>(
+const ConversationContext = createContext<ConversationContextValue | undefined>(
   undefined
 );
 
@@ -188,10 +188,6 @@ export const ConversationProvider = ({ children }: { children: ReactNode }) => {
     setPages([]);
   };
 
-  const handleSetPages = (pages: string[]) => {
-    setPages(pages);
-  };
-
   useEffect(() => {
     console.log("conversation changed: ", pages, conversation);
     if (
@@ -209,30 +205,31 @@ export const ConversationProvider = ({ children }: { children: ReactNode }) => {
     setPages([]);
     setFile(null);
   };
+
   return (
-    <ConvseationContext.Provider
+    <ConversationContext.Provider
       value={{
         conversation,
         conversations,
+        fileLoaded: pages.length > 0,
+        file,
+        page,
+        searchWord,
         startNewConversation,
         createNewConversation,
         selectConversation,
         sendMessage,
-        searchWord,
-        page,
-        fileLoaded: pages.length > 0,
-        file,
         setFile,
-        setPages: handleSetPages,
+        setPages,
       }}
     >
       {children}
-    </ConvseationContext.Provider>
+    </ConversationContext.Provider>
   );
 };
 
 export const useConversations = () => {
-  const context = useContext(ConvseationContext);
+  const context = useContext(ConversationContext);
   if (!context) {
     throw new Error(
       "useConversations must be used within a ConversationProvider"

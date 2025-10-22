@@ -13,6 +13,31 @@ export interface PdfViewerProps {
   file: File;
 }
 
+const normalize = (s: string) =>
+  s
+    .replace(/-\n/g, "")
+    .replace(/[^\p{L}\p{N}\s]/gu, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+
+const hasContiguousWordSeq = (
+  haystack: string,
+  needle: string,
+  minWords = 5
+) => {
+  const words = needle.split(" ").filter(Boolean);
+  if (words.length < minWords) return false;
+
+  for (let len = words.length; len >= minWords; len--) {
+    for (let start = 0; start + len <= words.length; start++) {
+      if (haystack.includes(words.slice(start, start + len).join(" ")))
+        return true;
+    }
+  }
+  return false;
+};
+
 export default function PdfViewer({ file }: PdfViewerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const pdfRef = useRef<PDFDocumentProxy | null>(null);
@@ -27,11 +52,7 @@ export default function PdfViewer({ file }: PdfViewerProps) {
   const { searchWord, page, setPages } = useConversations();
 
   useEffect(() => {
-    const onResize = () => {
-      if (containerRef.current) {
-        setPageWidth(containerRef.current.clientWidth);
-      }
-    };
+    const onResize = () => setPageWidth(containerRef.current?.clientWidth ?? 0);
     onResize();
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
@@ -42,15 +63,12 @@ export default function PdfViewer({ file }: PdfViewerProps) {
     setNumPages(pdf.numPages);
 
     const pageTexts: string[] = [];
-
     for (let i = 1; i <= pdf.numPages; i++) {
       const pg = await pdf.getPage(i);
       const content = await pg.getTextContent();
-
-      const pageText = content.items
-        .map((item) => (item as TextItem).str)
-        .join(" ");
-      pageTexts.push(pageText);
+      pageTexts.push(
+        content.items.map((item) => (item as TextItem).str).join(" ")
+      );
     }
 
     setPages(pageTexts);
@@ -74,84 +92,47 @@ export default function PdfViewer({ file }: PdfViewerProps) {
 
   useEffect(() => {
     if (!searchWord || !pdfRef.current || !page) return;
-    const currentId = loadId;
+    const currentLoadId = loadId;
 
-    const normalize = (s: string) =>
-      s
-        .replace(/-\n/g, "") // join hyphenated linebreaks
-        .replace(/[^\p{L}\p{N}\s]/gu, " ") // remove punctuation (unicode-safe)
-        .replace(/\s+/g, " ") // collapse whitespace
-        .trim()
-        .toLowerCase();
-
-    const hasContiguousWordSeq = (
-      haystack: string,
-      needle: string,
-      minWords = 5
-    ) => {
-      const needleWords = needle.split(" ").filter(Boolean);
-      if (needleWords.length < minWords) return false;
-
-      for (let len = needleWords.length; len >= minWords; len--) {
-        for (let start = 0; start + len <= needleWords.length; start++) {
-          const seq = needleWords.slice(start, start + len).join(" ");
-          if (haystack.includes(seq)) return true;
-        }
-      }
-      return false;
-    };
-
-    const findWordOnPage = async () => {
+    const findHighlights = async () => {
       const pdf = pdfRef.current;
       if (!pdf) return;
+
       const newHighlights: Record<number, Highlight[]> = {};
+      const pg = await pdf.getPage(page);
+      const content = await pg.getTextContent();
+      const items = content.items.filter((it) => "str" in it) as TextItem[];
 
-      const highlightPage = await pdf.getPage(page);
-      const textContent = await highlightPage.getTextContent();
-      const items = textContent.items.filter((it) => "str" in it);
-
-      const searchNormalized = normalize(searchWord);
-      console.log("searchNormalized:", searchNormalized);
-
+      const normalizedSearch = normalize(searchWord);
       const matches: Highlight[] = [];
 
       for (const item of items) {
-        const raw = item.str;
-        if (!raw) continue;
-
-        const itemNorm = normalize(raw);
-        if (!itemNorm) continue;
-
-        if (itemNorm.split(" ").length === 1) continue;
+        const itemNorm = normalize(item.str || "");
+        if (!itemNorm || itemNorm.split(" ").length === 1) continue;
 
         const directMatch =
-          itemNorm.includes(searchNormalized) ||
-          searchNormalized.includes(itemNorm);
-
+          itemNorm.includes(normalizedSearch) ||
+          normalizedSearch.includes(itemNorm);
         const seqMatch =
-          hasContiguousWordSeq(searchNormalized, itemNorm) ||
-          hasContiguousWordSeq(itemNorm, searchNormalized);
+          hasContiguousWordSeq(normalizedSearch, itemNorm) ||
+          hasContiguousWordSeq(itemNorm, normalizedSearch);
 
         if (directMatch || seqMatch) {
           const tx = item.transform;
-
           matches.push({
             x: tx[4],
             y: tx[5],
             width: item.width,
             height: item.height,
           });
-          // console.log("MATCH item:", { raw, itemNorm, directMatch, seqMatch });
-        } else {
-          // console.log("no match:", { raw, itemNorm });
         }
       }
 
       if (matches.length > 0) newHighlights[page] = matches;
-      if (loadId === currentId) setHighlights(newHighlights);
+      if (currentLoadId === loadId) setHighlights(newHighlights);
     };
 
-    findWordOnPage();
+    findHighlights();
   }, [searchWord, page, loadId]);
 
   return (
@@ -167,13 +148,13 @@ export default function PdfViewer({ file }: PdfViewerProps) {
             onLoadSuccess={onDocumentLoadSuccess}
             className="flex flex-col items-center gap-4"
           >
-            {Array.from({ length: numPages }, (_, index) => (
+            {Array.from({ length: numPages }, (_, idx) => (
               <PageWrapper
-                key={index}
-                pageNumber={index + 1}
+                key={idx}
+                pageNumber={idx + 1}
                 pageWidth={pageWidth}
-                scrollTo={scrollToPage === index + 1}
-                highlights={highlights[index + 1] || []}
+                scrollTo={scrollToPage === idx + 1}
+                highlights={highlights[idx + 1] || []}
               />
             ))}
           </Document>
