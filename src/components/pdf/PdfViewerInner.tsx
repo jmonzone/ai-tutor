@@ -86,7 +86,7 @@ export default function PdfViewerInner({ file }: PdfViewerProps) {
     const hasContiguousWordSeq = (
       haystack: string,
       needle: string,
-      minWords = 3
+      minWords = 5
     ) => {
       const needleWords = needle.split(" ").filter(Boolean);
       if (needleWords.length < minWords) return false;
@@ -128,8 +128,8 @@ export default function PdfViewerInner({ file }: PdfViewerProps) {
           searchNormalized.includes(itemNorm);
 
         const seqMatch =
-          hasContiguousWordSeq(searchNormalized, itemNorm, 3) ||
-          hasContiguousWordSeq(itemNorm, searchNormalized, 3);
+          hasContiguousWordSeq(searchNormalized, itemNorm) ||
+          hasContiguousWordSeq(itemNorm, searchNormalized);
 
         if (directMatch || seqMatch) {
           const tx = item.transform;

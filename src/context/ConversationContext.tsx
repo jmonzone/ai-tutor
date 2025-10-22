@@ -49,6 +49,7 @@ export const ConversationProvider = ({ children }: { children: ReactNode }) => {
     else {
       setConversation(null);
       setConversations([]);
+      setFile(null);
     }
   }, [user]);
 
@@ -128,7 +129,7 @@ export const ConversationProvider = ({ children }: { children: ReactNode }) => {
 
       console.log("fetchAIResponse complete", data);
 
-      setSearchWord(data.quote[0]);
+      setSearchWord(data.quote);
 
       setPage(data.page);
 
@@ -184,7 +185,6 @@ export const ConversationProvider = ({ children }: { children: ReactNode }) => {
     setConversation(conversation);
     setPage(null);
     setPages([]);
-    // setFile(null);
   };
 
   const handleSetPages = (pages: string[]) => {
