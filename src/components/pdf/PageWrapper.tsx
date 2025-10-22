@@ -9,7 +9,6 @@ import type { Highlight } from "@/types/highlight";
 interface PageWrapperProps {
   pageNumber: number;
   pageWidth: number;
-  pageHeight: number;
   scrollTo?: boolean;
   highlights?: Highlight[];
 }
@@ -17,7 +16,6 @@ interface PageWrapperProps {
 export default function PageWrapper({
   pageNumber,
   pageWidth,
-  pageHeight,
   scrollTo,
   highlights = [],
 }: PageWrapperProps) {

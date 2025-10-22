@@ -16,7 +16,6 @@ export default function PdfViewerInner({ file }: PdfViewerProps) {
 
   const [numPages, setNumPages] = useState(0);
   const [pageWidth, setPageWidth] = useState(0);
-  const [pageHeight, setPageHeight] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [scrollToPage, setScrollToPage] = useState<number | null>(null);
   const [highlights, setHighlights] = useState<Record<number, Highlight[]>>({});
@@ -28,7 +27,6 @@ export default function PdfViewerInner({ file }: PdfViewerProps) {
     const onResize = () => {
       if (containerRef.current) {
         setPageWidth(containerRef.current.clientWidth);
-        // setPageHeight(containerRef.current.clientHeight - 32);
       }
     };
     onResize();
@@ -107,7 +105,7 @@ export default function PdfViewerInner({ file }: PdfViewerProps) {
 
       const highlightPage = await pdf.getPage(page);
       const textContent = await highlightPage.getTextContent();
-      const items = textContent.items.filter((it) => "str" in it) as any[];
+      const items = textContent.items.filter((it) => "str" in it);
 
       const searchNormalized = normalize(searchWord);
       console.log("searchNormalized:", searchNormalized);
@@ -115,7 +113,7 @@ export default function PdfViewerInner({ file }: PdfViewerProps) {
       const matches: Highlight[] = [];
 
       for (const item of items) {
-        const raw = (item as any).str;
+        const raw = item.str;
         if (!raw) continue;
 
         const itemNorm = normalize(raw);
@@ -171,7 +169,6 @@ export default function PdfViewerInner({ file }: PdfViewerProps) {
                 key={index}
                 pageNumber={index + 1}
                 pageWidth={pageWidth}
-                pageHeight={pageHeight}
                 scrollTo={scrollToPage === index + 1}
                 highlights={highlights[index + 1] || []}
               />
