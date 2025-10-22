@@ -21,25 +21,17 @@ The goal is to create an intuitive and powerful study companion that merges docu
 
 ## 🚀 Key Features
 
-- **Authentication**  
-  Email/password signup, login, logout, and session validation
+- **Authentication:** Email/password signup, login, logout, and session validation
 
-- **PDF Upload & Storage**  
-  Upload documents to AWS S3 and view them in-app
+- **PDF Upload & Storage:** Upload documents to AWS S3 and view them in-app
 
-- **Interactive Chat Interface**  
-  Real-time AI chat powered by OpenAI’s API  
-  Message persistence across sessions
+- **Interactive Chat Interface:** Real-time AI chat powered by OpenAI’s API. Message persistence across sessions
 
-- **Voice Input & Output**  
-  Speech recognition and TTS integration for natural dialogue
+- **Voice Input & Output:** Speech recognition and TTS integration for natural dialogue
 
-- **AI-Powered Document Control**  
-  The AI can highlight, annotate, and summarize PDF content  
-  References page numbers and related sections automatically
+- **AI-Powered Document Control:** The AI can highlight, annotate, and summarize PDF content. References page numbers and related sections automatically
 
-- **Data Persistence**  
-  MongoDB database to store users, PDFs, and conversations
+- **Data Persistence:** MongoDB database to store users, PDFs, and conversations
 
 ---
 
