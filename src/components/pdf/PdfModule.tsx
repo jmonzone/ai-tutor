@@ -5,9 +5,17 @@ import FileDrop from "../ui/Filedrop";
 import { useUser } from "@/context/UserContext";
 import { fetchWithAuth } from "@/lib/auth";
 import Chat from "../chat/Chat";
-import PdfViewer from "./PdfViewer";
 import { useConversations } from "@/context/ConversationContext";
 import { Conversation } from "@/types/conversation";
+import dynamic from "next/dynamic";
+
+const PdfViewer = dynamic(() => import("./PdfViewer"), {
+  ssr: false, // disable server-side rendering
+});
+
+export interface PdfViewerProps {
+  file: File;
+}
 
 export default function PdfModule() {
   const { user } = useUser();
