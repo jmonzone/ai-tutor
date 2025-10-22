@@ -19,6 +19,7 @@ export async function POST(req: NextRequest) {
 
     const { id, messages, pages } = conversation;
 
+    const latestUserMessage = messages[messages.length - 1];
     const recentMessages = messages.slice(-3);
     const questionText = recentMessages
       .map((msg: OpenAIMessage) => msg.content)
