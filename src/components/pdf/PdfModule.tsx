@@ -9,24 +9,16 @@ import { useConversations } from "@/context/ConversationContext";
 import { Conversation } from "@/types/conversation";
 import dynamic from "next/dynamic";
 
-const PdfViewer = dynamic(() => import("./PdfViewer"), {
-  ssr: false, // disable server-side rendering
-});
-
-export interface PdfViewerProps {
-  file: File;
-}
+const PdfViewer = dynamic(() => import("./PdfViewer"), { ssr: false });
 
 export default function PdfModule() {
   const { user } = useUser();
-
   const { conversation, createNewConversation, fileLoaded, file, setFile } =
     useConversations();
-  const lastConversationId = useRef<string | null>(null); // useRef avoids re-renders
+  const lastConversationId = useRef<string | null>(null);
 
   const onFileUploaded = async (targetFile: File) => {
     setFile(targetFile);
-
     if (user.role !== "student") return;
 
     const data = await fetchWithAuth("/api/conversations/file", {
@@ -44,12 +36,8 @@ export default function PdfModule() {
       body: targetFile,
     });
 
-    console.log("PDF uploaded! Mongo:", data);
-
     const newConversation = await createNewConversation(data);
-    if (newConversation?.id) {
-      lastConversationId.current = newConversation.id; // skip fetch for this conversation
-    }
+    if (newConversation?.id) lastConversationId.current = newConversation.id;
   };
 
   useEffect(() => {
@@ -62,16 +50,11 @@ export default function PdfModule() {
       const s3Key = conversation.file?.s3Key;
       if (!s3Key) return;
 
-      console.log("Fetching remote file...");
       const encodedKey = encodeURIComponent(s3Key);
-
       const response = await fetchWithAuth(
         `/api/conversations/file?file=${encodedKey}`
       );
-      if (!response.url) {
-        console.error("Failed to fetch file:", response.statusText);
-        return;
-      }
+      if (!response.url) return;
 
       setFile(response.url);
     };
@@ -79,25 +62,30 @@ export default function PdfModule() {
     fetchFile(conv);
   }, [conversation]);
 
-  return file == null ? (
-    <div className="flex flex-col-reverse md:flex-row items-center justify-center flex-1 overflow-hidden">
-      <FileDrop onFileUploaded={onFileUploaded} />
-    </div>
-  ) : (
-    <div className="flex flex-col-reverse md:flex-row flex-1 overflow-hidden relative">
-      <div className="w-full md:w-1/2 flex-1 min-h-0 overflow-auto md:border-r border-gray-300">
+  if (!file) {
+    return (
+      <div className="flex flex-1 items-center justify-center overflow-hidden">
+        <FileDrop onFileUploaded={onFileUploaded} />
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-1 flex-col-reverse md:flex-row overflow-hidden relative">
+      {/* Chat Section */}
+      <div className="flex-1 md:w-1/2 h-1/2 md:h-full overflow-auto border-t md:border-t-0 md:border-l border-gray-300">
         <Chat />
       </div>
 
-      <div className="relative w-full md:w-1/2 flex-1 min-h-0 overflow-auto">
+      {/* PDF Section */}
+      <div className="flex-1 md:w-1/2 h-1/2 md:h-full overflow-auto border-b md:border-b-0 md:border-l border-gray-300">
         <PdfViewer file={file} />
       </div>
 
+      {/* Loading overlay */}
       {!fileLoaded && (
         <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/80 backdrop-blur-md text-white pointer-events-auto">
-          {/* Spinner */}
           <div className="w-12 h-12 border-4 border-white/30 border-t-white rounded-full animate-spin mb-4"></div>
-
           <span className="text-lg tracking-wide animate-pulse">
             Loading PDF…
           </span>
