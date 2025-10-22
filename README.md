@@ -1,6 +1,6 @@
 # AI Study Tutor
 
-**Live Demo:** [https://studyfetch-ai-tutor.vercel.app](https://studyfetch-ai-tutor.vercel.app)
+**Live Demo:** [https://ai-tutor-delta-ten.vercel.app/](https://ai-tutor-delta-ten.vercel.app/)
 
 A conversational AI tutor that helps students understand PDF documents through interactive dialogue, highlighting, and voice features.
 
@@ -55,21 +55,21 @@ The goal is to create an intuitive and powerful study companion that merges docu
 
 ## 🔐 Environment Variables
 
-The repository is public; request credentials to run locally.
+Request credentials to run locally.
 
 ---
 
 ## ⚙️ Setup Instructions
 
 1. **Clone the repository**
-   ```bash
+   ```
    git clone https://github.com/jonanmonzon/studyfetch-ai-tutor.git
    cd studyfetch-ai-tutor
    ```
 2. **Install dependencies**
 
-   ```npm install
-
+   ```
+   npm install
    ```
 
 3. **Add environment variables**
@@ -79,12 +79,12 @@ The repository is public; request credentials to run locally.
 
 4. **Run the development server**
 
-```npm run dev
-
+```
+npm run dev
 ```
 
 5. **Visit locally**
 
-```http://localhost:3000
-``1
+```
+http://localhost:3000
 ```
