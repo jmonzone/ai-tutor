@@ -55,7 +55,7 @@ export const ConversationProvider = ({ children }: { children: ReactNode }) => {
 
   const fetchConversations = async () => {
     try {
-      const data = await fetchWithAuth("/api/chat/conversations", {
+      const data = await fetchWithAuth("/api/conversations", {
         method: "GET",
       });
       const conversations: Conversation[] = data.conversations || [];
@@ -90,7 +90,7 @@ export const ConversationProvider = ({ children }: { children: ReactNode }) => {
 
   const updateTitle = async (conversation: Conversation, pages: string[]) => {
     console.log("updating title");
-    const data = await fetchWithAuth("/api/chat/conversations/title", {
+    const data = await fetchWithAuth("/api/conversations/title", {
       method: "POST",
       body: JSON.stringify({ conversation, pages }),
     });
@@ -109,7 +109,7 @@ export const ConversationProvider = ({ children }: { children: ReactNode }) => {
 
   const fetchAIResponse = async (conversation: Conversation) => {
     try {
-      const data = await fetchWithAuth("/api/chat/send", {
+      const data = await fetchWithAuth("/api/conversations/message", {
         method: "POST",
         body: JSON.stringify({
           conversation,
@@ -156,7 +156,7 @@ export const ConversationProvider = ({ children }: { children: ReactNode }) => {
     file: FileMetadata
   ): Promise<Conversation | null> => {
     try {
-      const data = await fetchWithAuth("/api/chat/conversations", {
+      const data = await fetchWithAuth("/api/conversations/", {
         method: "POST",
         body: JSON.stringify({ title: "New Conversation", fileId: file.id }),
       });

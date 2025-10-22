@@ -1,36 +1,90 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# AI Study Tutor
 
-## Getting Started
+**Live Demo:** [https://studyfetch-ai-tutor.vercel.app](https://studyfetch-ai-tutor.vercel.app)
 
-First, run the development server:
+A conversational AI tutor that helps students understand PDF documents through interactive dialogue, highlighting, and voice features.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+---
+
+## 🧩 Overview
+
+The AI Tutor enables users to upload PDFs and engage in real-time conversation with an AI assistant that can:
+
+- Reference specific pages and passages
+- Highlight and annotate text dynamically
+- Summarize sections
+- Support **voice input/output** for hands-free learning
+
+The goal is to create an intuitive and powerful study companion that merges document comprehension with conversational AI.
+
+---
+
+## 🚀 Key Features
+
+- **Authentication**  
+  Email/password signup, login, logout, and session validation
+
+- **PDF Upload & Storage**  
+  Upload documents to AWS S3 and view them in-app
+
+- **Interactive Chat Interface**  
+  Real-time AI chat powered by OpenAI’s API  
+  Message persistence across sessions
+
+- **Voice Input & Output**  
+  Speech recognition and TTS integration for natural dialogue
+
+- **AI-Powered Document Control**  
+  The AI can highlight, annotate, and summarize PDF content  
+  References page numbers and related sections automatically
+
+- **Data Persistence**  
+  MongoDB database to store users, PDFs, and conversations
+
+---
+
+## 🛠️ Tech Stack
+
+- **Frontend:** Next.js 14+ (App Router), Tailwind CSS
+- **Backend:** Node.js API routes with MongoDB (Mongoose)
+- **AI Integration:** OpenAI API (Vercel AI SDK compatible)
+- **Storage:** AWS S3
+- **Deployment:** Vercel
+
+---
+
+## 🔐 Environment Variables
+
+The repository is public; request credentials to run locally.
+
+---
+
+## ⚙️ Setup Instructions
+
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/jonanmonzon/studyfetch-ai-tutor.git
+   cd studyfetch-ai-tutor
+   ```
+2. **Install dependencies**
+
+   ```npm install
+
+   ```
+
+3. **Add environment variables**
+
+- Copy .env.example → .env
+- Fill in API keys and credentials
+
+4. **Run the development server**
+
+```npm run dev
+
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+5. **Visit locally**
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```http://localhost:3000
+``1
+```

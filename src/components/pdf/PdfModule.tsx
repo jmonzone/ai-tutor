@@ -21,7 +21,7 @@ export default function PdfModule() {
 
     if (user.role !== "student") return;
 
-    const data = await fetchWithAuth("/api/chat/file", {
+    const data = await fetchWithAuth("/api/conversations/file", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -57,7 +57,9 @@ export default function PdfModule() {
       console.log("Fetching remote file...");
       const encodedKey = encodeURIComponent(s3Key);
 
-      const response = await fetchWithAuth(`/api/chat/file?file=${encodedKey}`);
+      const response = await fetchWithAuth(
+        `/api/conversations/file?file=${encodedKey}`
+      );
       if (!response.url) {
         console.error("Failed to fetch file:", response.statusText);
         return;
